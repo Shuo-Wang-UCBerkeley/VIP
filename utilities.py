@@ -5,8 +5,10 @@ import os
 import boto3
 import re
 
+s3 = boto3.client('s3')
+bucket = 'capstone-bucket-4-friends'
 
-def convert_csv_to_parquet(s3, csv_key):
+def convert_csv_to_parquet(csv_key):
     """
     Downloads a CSV file from S3, converts it to Parquet, and uploads the Parquet file.
 
@@ -14,8 +16,6 @@ def convert_csv_to_parquet(s3, csv_key):
       csv_key: S3 key of the CSV file
     """
 
-    s3 = boto3.client('s3')
-    bucket = 'capstone-bucket-4-friends'
     parquet_key = csv_key.replace(".csv", ".parquet")
     file_path = f"./data/{csv_key}"
     parquet_file_path = f"./data/{parquet_key}"
@@ -27,11 +27,7 @@ def convert_csv_to_parquet(s3, csv_key):
     #     keep = ["date", "PERMNO", "TICKER", "COMNAM", "NAICS", "PRIMEXCH", "TRDSTAT", "PRC", "VOL", "NUMTRD", "RET", "SHROUT", "NMSIND"]
     #     df = df[keep]
 
-    # Convert DataFrame to Parquet
-    table = pa.Table.from_pandas(df)
-    with pa.OSFile(parquet_file_path, 'wb') as sink:
-        with pa.RecordBatchFileWriter(sink, table.schema) as writer:
-            writer.write_table(table)
+    df.to_parquet(parquet_file_path)
 
     # Upload Parquet file to S3
     s3.upload_file(parquet_file_path, bucket, parquet_key)
