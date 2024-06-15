@@ -8,7 +8,8 @@ import re
 s3 = boto3.client('s3')
 bucket = 'capstone-bucket-4-friends'
 
-def convert_csv_to_parquet(csv_key):
+
+def convert_csv_to_parquet(csv_key, delete_file=False):
     """
     Downloads a CSV file from S3, converts it to Parquet, and uploads the Parquet file.
 
@@ -31,12 +32,14 @@ def convert_csv_to_parquet(csv_key):
 
     # Upload Parquet file to S3
     s3.upload_file(parquet_file_path, bucket, parquet_key)
-    s3.delete_object(Bucket=bucket, Key=csv_key)
 
-    # Specify the path of the file you want to delete
-    try:
-        # Attempt to delete the file
-        os.remove(file_path)
-        print(f"File '{file_path}' successfully deleted.")
-    except OSError as e:
-        print(f"Error deleting the file '{file_path}': {e.strerror}")
+    if delete_file:
+        s3.delete_object(Bucket=bucket, Key=csv_key)
+
+        # Specify the path of the file you want to delete
+        try:
+            # Attempt to delete the file
+            os.remove(file_path)
+            print(f"File '{file_path}' successfully deleted.")
+        except OSError as e:
+            print(f"Error deleting the file '{file_path}': {e.strerror}")
