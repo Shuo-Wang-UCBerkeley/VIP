@@ -77,6 +77,7 @@ columns = ['PERMNO', 'date', 'SHRCD', 'EXCHCD', 'SICCD', 'NCUSIP',
        'BID', 'ASK', 'SHROUT', 'CFACPR', 'CFACSHR', 'OPENPRC', 'NUMTRD',
        'RETX', 'vwretd', 'vwretx', 'ewretd', 'ewretx', 'sprtrn']
 
+# Functions from EDA
 def load_csv(file_path, dtype_spec):
     """Load data from a CSV file."""
     try:
@@ -98,7 +99,7 @@ def load_parquet(file_path):
         print(f"An error occurred: {e}")
 
 def clean_data(df):
-    """Apply common preprocessing steps to the DataFrame."""
+    """Apply common EDA preprocessing steps."""
     # Convert date columns to datetime
     date_columns = ['date', 'NAMEENDT', 'DCLRDT', 'DLPDT', 'NEXTDT', 'PAYDT', 'RCRDDT', 'SHRENDDT']
     for col in date_columns:
@@ -116,4 +117,40 @@ def clean_data(df):
     object_columns = df.select_dtypes(include=['object']).columns
     df[object_columns] = df[object_columns].fillna('Unknown')
     
+    return df
+
+# Functions from milestone goals
+
+def additional_cleaning(df):
+    """Additional cleaning steps."""
+    # Keep only securities with more than 128 days of return records
+    df = df.groupby('PERMNO').filter(lambda x: len(x) > 128)
+    
+    # Remove severe outliers
+    df['RET'] = pd.to_numeric(df['RET'], errors='coerce')
+    df = df[df['RET'].between(df['RET'].quantile(0.01), df['RET'].quantile(0.99))] # Check with Rachel if this is enough/too much
+    
+    # Apply log transformation and normalization to the return
+    df['RET'] = np.log1p(df['RET'])
+    df['RET'] = (df['RET'] - df['RET'].mean()) / df['RET'].std()
+    
+    # Create additional features
+    df['market_return'] = df['vwretd'] # Value-Weighted Return (includes distributions)
+    df['industry'] = df['NAICS'].apply(lambda x: str(x)[:2] if pd.notnull(x) else 'Unknown')
+    
+    return df
+
+# Function that calls all other functions to use
+def clean_and_process_data(file_path, file_type='csv'):
+    """Load, clean, and process data."""
+    if file_type == 'csv':
+        df = load_csv(file_path, dtype_spec)
+    elif file_type == 'parquet':
+        df = load_parquet(file_path)
+    else:
+        raise ValueError("Unsupported file type. Use 'csv' or 'parquet'.")
+    
+    if df is not None:
+        df = clean_data(df)
+        df = additional_cleaning(df)
     return df
