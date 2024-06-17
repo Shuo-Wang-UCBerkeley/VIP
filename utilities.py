@@ -24,10 +24,6 @@ def convert_csv_to_parquet(csv_key, delete_file=False):
     s3.download_file(bucket, csv_key, file_path)
     df = pd.read_csv(file_path)
 
-    # if csv_key.startswith("crsp"):
-    #     keep = ["date", "PERMNO", "TICKER", "COMNAM", "NAICS", "PRIMEXCH", "TRDSTAT", "PRC", "VOL", "NUMTRD", "RET", "SHROUT", "NMSIND"]
-    #     df = df[keep]
-
     df.to_parquet(parquet_file_path)
 
     # Upload Parquet file to S3
