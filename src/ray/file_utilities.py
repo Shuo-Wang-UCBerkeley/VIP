@@ -1,12 +1,10 @@
-import pandas as pd
-import pyarrow as pa
-from io import StringIO
 import os
-import boto3
-import re
 
-s3 = boto3.client('s3')
-bucket = 'capstone-bucket-4-friends'
+import boto3
+import pandas as pd
+
+s3 = boto3.client("s3")
+bucket = "capstone-bucket-4-friends"
 
 
 def convert_csv_to_parquet(csv_key, delete_file=False):
@@ -39,3 +37,20 @@ def convert_csv_to_parquet(csv_key, delete_file=False):
             print(f"File '{file_path}' successfully deleted.")
         except OSError as e:
             print(f"Error deleting the file '{file_path}': {e.strerror}")
+
+
+def s3_download(s3_path):
+    """
+    download from s3 into the data folder.
+
+    Returns:
+        the target file path in local folder
+    """
+    file_name = s3_path.split('/')[1]
+    # print(file_name)
+    target_path = f"../../data/{file_name}"
+    # print(target_path)
+
+    s3.download_file(bucket, s3_path, target_path)
+
+    return os.path.abspath(target_path)
