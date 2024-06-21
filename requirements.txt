@@ -1,0 +1,7 @@
+# pip install --upgrade -r matplotlib
+yfinance 
+PyPortfolioOpt 
+seaborn 
+black 
+isort
+boto3
