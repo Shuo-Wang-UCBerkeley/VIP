@@ -1,1 +1,1 @@
-Capstone project in MIDS for summer 2024
+# Capstone project in MIDS for summer 2024
