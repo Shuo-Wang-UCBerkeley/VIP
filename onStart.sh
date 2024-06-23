@@ -5,3 +5,5 @@ pip install black isort
 pip install wrds
 
 restart-jupyter-server
+
+pip install -r requirements.txt
