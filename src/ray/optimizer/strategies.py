@@ -18,9 +18,7 @@ def minimum_variance(ret, bound):
     def weight_cons(weights):
         return np.sum(weights) - 1
 
-    bounds_lim = [
-        bound for x in range(len(ret.columns))
-    ]  # change to (-1, 1) if you want to short
+    bounds_lim = [bound for x in range(len(ret.columns))]  # change to (-1, 1) if you want to short
     init = [1 / len(ret.columns) for i in range(len(ret.columns))]
     constraint = {"type": "eq", "fun": weight_cons}
 
@@ -47,9 +45,7 @@ def max_sharpe(ret, bound):
     def weight_cons(weights):
         return np.sum(weights) - 1
 
-    bounds_lim = [
-        bound for x in range(len(ret.columns))
-    ]  # change to (-1, 1) if you want to short
+    bounds_lim = [bound for x in range(len(ret.columns))]  # change to (-1, 1) if you want to short
     init = [1 / len(ret.columns) for i in range(len(ret.columns))]
     constraint = {"type": "eq", "fun": weight_cons}
 

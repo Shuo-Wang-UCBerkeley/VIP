@@ -356,9 +356,7 @@ def clean_data(df):
 
     # Fill missing values for numerical columns with 0
     numeric_columns = df.select_dtypes(include=["float64", "int64"]).columns
-    df[numeric_columns] = df[numeric_columns].fillna(
-        0
-    )  # not sure if we want to do this
+    df[numeric_columns] = df[numeric_columns].fillna(0)  # not sure if we want to do this
 
     # Fill missing values for object columns with 'Unknown'
     object_columns = df.select_dtypes(include=["object"]).columns
