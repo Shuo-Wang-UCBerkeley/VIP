@@ -1,9 +1,12 @@
 # pip install --upgrade -r matplotlib
-scipy
-yfinance 
-PyPortfolioOpt 
+scipy==1.12.0
+wrds
+# PyPortfolioOpt >1.13
+yfinance
 seaborn
 plotly
 black 
 isort
 boto3
+black[jupyter]
+jupyterlab-code-formatter
