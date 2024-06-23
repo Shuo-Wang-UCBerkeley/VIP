@@ -46,7 +46,7 @@ def s3_download(s3_path):
     Returns:
         the target file path in local folder
     """
-    file_name = s3_path.split('/')[1]
+    file_name = s3_path.split("/")[1]
     # print(file_name)
     target_path = f"../../data/{file_name}"
     # print(target_path)

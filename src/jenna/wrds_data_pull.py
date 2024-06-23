@@ -6,8 +6,8 @@ from datetime import datetime
 db = wrds.Connection()
 
 # Set date range
-start_date = '2018-01-01'
-end_date = '2023-12-31'
+start_date = "2018-01-01"
+end_date = "2023-12-31"
 
 # CRSP Daily Stock Data
 crsp_query = f"""
@@ -32,22 +32,25 @@ compustat_query = f"""
 compustat_data = db.raw_sql(compustat_query)
 
 # Convert date columns to datetime
-crsp_data['date'] = pd.to_datetime(crsp_data['date'])
-compustat_data['datadate'] = pd.to_datetime(compustat_data['datadate'])
+crsp_data["date"] = pd.to_datetime(crsp_data["date"])
+compustat_data["datadate"] = pd.to_datetime(compustat_data["datadate"])
 
 # Merge datasets
-merged_data = pd.merge(crsp_data, compustat_data,
-                       left_on=['gvkey', 'date'],
-                       right_on=['gvkey', 'datadate'],
-                       how='left')
+merged_data = pd.merge(
+    crsp_data,
+    compustat_data,
+    left_on=["gvkey", "date"],
+    right_on=["gvkey", "datadate"],
+    how="left",
+)
 
 # Forward fill Compustat data (optional, fills in missing quarterly data)
-merged_data = merged_data.sort_values(['permno', 'date'])
-fill_columns = ['atq', 'ceqq', 'dlttq', 'dlcq', 'niq', 'fyearq', 'fqtr']
-merged_data[fill_columns] = merged_data.groupby('permno')[fill_columns].ffill()
+merged_data = merged_data.sort_values(["permno", "date"])
+fill_columns = ["atq", "ceqq", "dlttq", "dlcq", "niq", "fyearq", "fqtr"]
+merged_data[fill_columns] = merged_data.groupby("permno")[fill_columns].ffill()
 
 # Save to CSV
-merged_data.to_csv('crsp_compustat_merged_2018_2023.csv', index=False)
+merged_data.to_csv("crsp_compustat_merged_2018_2023.csv", index=False)
 
 # Close the connection
 db.close()

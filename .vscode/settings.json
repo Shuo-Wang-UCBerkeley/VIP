@@ -1,0 +1,7 @@
+{
+    "python.defaultInterpreterPath": "~/.cache/pypoetry/virtualenvs/src-_08Hpw27-py3.10/bin/python",
+    "black-formatter.args": [
+        "--line-length",
+        "120"
+    ],
+}

@@ -31,7 +31,9 @@ print(hist_cov)
 
 # calculate portfolio returns, standard deviation (volatility), and sharpe ratio
 def portfolio_return(weights, mean):
-    portfolio_return = np.dot(weights.T, mean.values) * 250  # annualize data; ~250 trading days in a year
+    portfolio_return = (
+        np.dot(weights.T, mean.values) * 250
+    )  # annualize data; ~250 trading days in a year
     return portfolio_return[0]
 
 
@@ -65,7 +67,9 @@ for i in range(n_portfolios):
 equally_weighted_weights = np.array(equal_weight(TICKERS))
 equally_weighted_return = portfolio_return(equally_weighted_weights, hist_mean)
 equally_weighted_std = portfolio_std(equally_weighted_weights, hist_cov)
-equally_weighted_sharpe_ratio = portfolio_sharpe(equally_weighted_return, equally_weighted_std)
+equally_weighted_sharpe_ratio = portfolio_sharpe(
+    equally_weighted_return, equally_weighted_std
+)
 
 print("---------- Equally Weighted Portfolio ----------")
 print("Weights:", equally_weighted_weights)
@@ -130,9 +134,21 @@ for index, day in hist_prices.iterrows():
     gmv_port_val = 0
     max_sharpe_port_val = 0
     for i, asset in enumerate(TICKERS):
-        equal_weighted_port_val += equally_weighted_weights[i] * TOTAL_BALANCE / hist_prices[asset].iloc[1] * day[asset]
-        gmv_port_val += gmv_weights[i] * TOTAL_BALANCE / hist_prices[asset].iloc[1] * day[asset]
-        max_sharpe_port_val += max_sharpe_weights[i] * TOTAL_BALANCE / hist_prices[asset].iloc[1] * day[asset]
+        equal_weighted_port_val += (
+            equally_weighted_weights[i]
+            * TOTAL_BALANCE
+            / hist_prices[asset].iloc[1]
+            * day[asset]
+        )
+        gmv_port_val += (
+            gmv_weights[i] * TOTAL_BALANCE / hist_prices[asset].iloc[1] * day[asset]
+        )
+        max_sharpe_port_val += (
+            max_sharpe_weights[i]
+            * TOTAL_BALANCE
+            / hist_prices[asset].iloc[1]
+            * day[asset]
+        )
 
     date_range.append(index)
     equally_weighted_portfolio.append(equal_weighted_port_val)
@@ -163,7 +179,13 @@ plt.show()
 
 # Display portfolios
 plt.scatter(portfolio_stds, portfolio_returns, marker="o", s=3, label="Random")
-plt.plot(efficient_frontier_risk, target_returns, "og", markersize=3, label="Efficient Frontier")
+plt.plot(
+    efficient_frontier_risk,
+    target_returns,
+    "og",
+    markersize=3,
+    label="Efficient Frontier",
+)
 plt.plot(equally_weighted_std, equally_weighted_return, "or", label="Equally Weighted")
 plt.plot(gmv_std, gmv_return, "oc", label="Global Minimum Variance")
 plt.plot(max_sharpe_std, max_sharpe_return, "om", label="Max Sharpe")

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "capstone-2024-summer"
+name = "src"
 version = "0.1.0"
 description = "poetry inital toml for the project"
 authors = ["Ray Cao <caopuzheng@gmail.com>"]
@@ -24,7 +24,7 @@ ipykernel = "^6.29.4"
 pytest = "^7.4.2"
 httpx = "^0.24.1"
 ruff = "^0.0.287"
-black = "^23.7.0"
+black = {extras = ["jupyter"], version = "^24.4.2"}
 pre-commit = "^3.4.0"
 isort = "^5.13.2"
 
