@@ -54,3 +54,15 @@ def s3_download(s3_path):
     s3.download_file(bucket, s3_path, target_path)
 
     return os.path.abspath(target_path)
+
+
+def s3_upload(s3_path):
+    """
+    upload from data folder into the s3 path
+
+    Returns:
+        the target file path in local folder
+    """
+    file_name = s3_path.split("/")[1]
+    data_path = f"../../data/{file_name}"
+    s3.upload_file(bucket, s3_path, data_path)
