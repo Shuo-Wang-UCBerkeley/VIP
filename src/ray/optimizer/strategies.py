@@ -2,13 +2,46 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-
-def equal_weight(assets):
-    optimal = [1 / len(assets) for i in range(len(assets))]
-    return optimal
+BOUND = (0, 0.1)  # bounds, change to (-1, 1) if shorting is allowed
 
 
-def minimum_variance(ret, bound):
+def equal_weight(n):
+    return [1 / n] * n
+
+
+def print_non_zero_weights(tickers, weights):
+    for i in range(len(tickers)):
+        if abs(weights[i]) > 0.0001:
+            print(f"{tickers[i]}: {weights[i]}")
+
+
+def portfolio_return(weights, ret):
+    portfolio_return = np.dot(ret, weights)  # annualize data; ~250 trading days in a year
+    return portfolio_return
+
+
+def portfolio_culmulative_return(weights, ret):
+    """
+    This assumes the portfolio is rebalanced at the end of each day, thus the weights are constant
+    """
+    return ret.dot(weights).add(1).cumprod().subtract(1).multiply(100)
+
+
+def portfolio_std(weights, ret):
+    portfolio_std = np.dot(ret, weights).std() * np.sqrt(250)
+    return portfolio_std
+
+
+# def portfolio_std(weights, covariance):
+#     portfolio_std = np.sqrt(np.dot(weights.T, np.dot(covariance, weights)) * 250)
+#     return portfolio_std
+
+
+def portfolio_sharpe(ret, std):
+    return ret / std
+
+
+def minimum_variance(ret):
     def find_port_variance(weights):
         # this is actually std
         cov = ret.cov()
@@ -18,13 +51,13 @@ def minimum_variance(ret, bound):
     def weight_cons(weights):
         return np.sum(weights) - 1
 
-    bounds_lim = [bound for x in range(len(ret.columns))]  # change to (-1, 1) if you want to short
-    init = [1 / len(ret.columns) for i in range(len(ret.columns))]
+    n = len(ret.columns)
+    bounds_lim = [BOUND] * n
     constraint = {"type": "eq", "fun": weight_cons}
 
     optimal = minimize(
         fun=find_port_variance,
-        x0=init,
+        x0=equal_weight(n),
         bounds=bounds_lim,
         constraints=constraint,
         method="SLSQP",
@@ -33,7 +66,7 @@ def minimum_variance(ret, bound):
     return list(optimal["x"])
 
 
-def max_sharpe(ret, bound):
+def max_sharpe(ret):
     def sharpe_func(weights):
         hist_mean = ret.mean(axis=0).to_frame()
         hist_cov = ret.cov()
@@ -45,13 +78,13 @@ def max_sharpe(ret, bound):
     def weight_cons(weights):
         return np.sum(weights) - 1
 
-    bounds_lim = [bound for x in range(len(ret.columns))]  # change to (-1, 1) if you want to short
-    init = [1 / len(ret.columns) for i in range(len(ret.columns))]
+    n = len(ret.columns)
+    bounds_lim = [BOUND] * n  # change to (-1, 1) if you want to short
     constraint = {"type": "eq", "fun": weight_cons}
 
     optimal = minimize(
         fun=sharpe_func,
-        x0=init,
+        x0=equal_weight(n),
         bounds=bounds_lim,
         constraints=constraint,
         method="SLSQP",
