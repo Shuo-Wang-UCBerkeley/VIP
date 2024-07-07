@@ -1,8 +1,6 @@
-# Documentation & Assignment Answers
+# Documentation
 
-## Documentation
-
-### What my application does?
+## What my application does?
 
 My application is a simple python application that uses the [FastAPI](https://fastapi.tiangolo.com/) framework to create a simple REST API and hosted asynchronous using [uvicorn](https://www.uvicorn.org/).
 
@@ -25,7 +23,7 @@ Other supporting endpoints include:
 - a "/docs" endpoint for the openapi documentation
 - a "/openapi.json" endpoint that returns a `json` object that meets the OpenAPI specification version `3+`
 
-### How to build my application?
+## How to build my application?
 
 To build it, you need to run the following command, assuming you are in the same directory as the `Dockerfile`:
 
@@ -37,11 +35,11 @@ sh run_prod.sh
 sh run_dev.sh
 ```
 
-### How to run my application?
+## How to run my application?
 
 To run the production version of the app, you can go to [here](https://caopuzheng.mids255.com/docs#) and try with the example data.
 
-### How to test my application?
+## How to test my application?
 
 ```bash
 poetry run pytest
