@@ -1,5 +1,10 @@
+import asyncio
+from typing import Any, Generator
+
 import pytest
 from fastapi.testclient import TestClient
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
 
 from src.server.main import app
 
@@ -7,6 +12,17 @@ client = TestClient(app)
 
 hello_endpoint = "/hello"
 missing_field_msg = "Field required"
+
+
+@pytest.fixture(autouse=True)
+def _init_cache() -> Generator[Any, Any, None]:
+    """
+    Initialize the cache before each test and clear it after each test.
+    Needed to mock the redis cache for testing.
+    """
+    FastAPICache.init(InMemoryBackend())
+    yield
+    asyncio.run(FastAPICache.clear())
 
 
 @pytest.mark.parametrize(

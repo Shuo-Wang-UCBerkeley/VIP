@@ -1,6 +1,7 @@
 {
     "configurations": [
         {
+            // doesn't work yet
             "args": [
                 "${file}",
                 "-vv",
@@ -31,6 +32,7 @@
             "console": "externalTerminal"
         },
         {
+            // doesn't matter - not tested
             "cwd": "${workspaceFolder}/src",
             "justMyCode": true,
             "name": "Python: Current File",

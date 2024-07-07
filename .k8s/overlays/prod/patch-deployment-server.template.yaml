@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: not-important
+spec:
+  template:
+    spec:
+      containers:
+        - name: server
+          image: w255mids.azurecr.io/caopuzheng/server_amd64:GIT_HASH
+          resources:
+            requests:
+              cpu: 200m
+              memory: 500Mi
+            limits:
+              cpu: 500m
+              memory: 500Mi
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+
+          # different probes
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 2
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /health
+              port: 8000
+            initialDelaySeconds: 1
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20

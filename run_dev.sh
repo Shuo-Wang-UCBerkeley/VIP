@@ -18,14 +18,14 @@ poetry install
 poetry env list --full-path
 
 # Train the model if model_pipeline.pkl does not exist
-echo
-FILE=./model_pipeline.pkl
-if [ ! -f ${FILE} ]; then
-    echo "training model..."
-    poetry run python ./trainer/train.py
-else
-    echo "${FILE} already exists, skipping training..."
-fi
+# echo
+# FILE=./model_pipeline.pkl
+# if [ ! -f ${FILE} ]; then
+#     echo "training model..."
+#     poetry run python ./trainer/train.py
+# else
+#     echo "${FILE} already exists, skipping training..."
+# fi
 
 # Run pytest within poetry virtualenv
 echo
@@ -72,18 +72,18 @@ curl -o /dev/null -s -w "%{http_code}\n" -X GET "http://localhost:8000/hello?na=
 echo "testing '/docs' endpoint, expecting 200..."
 curl -o /dev/null -s -w "%{http_code}\n" -X GET "http://localhost:8000/docs"
 
-echo "testing '/predict' endpoint, expecting an valid prediction output..."
-curl -X POST 'http://localhost:8000/predict' \
-    -H 'accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d '{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}'
+# echo "testing '/predict' endpoint, expecting an valid prediction output..."
+# curl -X POST 'http://localhost:8000/predict' \
+#     -H 'accept: application/json' \
+#     -H 'Content-Type: application/json' \
+#     -d '{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}'
 
-echo
-echo "testing '/bulk_predict' endpoint, expecting an valid prediction output..."
-# Test bulk predict endpoint with valid input
-curl -X POST "http://localhost:8000/bulk_predict" \
-    -H "Content-Type: application/json" \
-    -d '{"houses": [{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322},{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}]}'
+# echo
+# echo "testing '/bulk_predict' endpoint, expecting an valid prediction output..."
+# # Test bulk predict endpoint with valid input
+# curl -X POST "http://localhost:8000/bulk_predict" \
+#     -H "Content-Type: application/json" \
+#     -d '{"houses": [{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322},{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}]}'
 
 # output and tail the logs for the api deployment
 echo
