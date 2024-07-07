@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "args": [
+                "${file}",
+                "-vv",
+                "-s"
+            ],
+            "cwd": "${workspaceFolder}/src",
+            "justMyCode": true,
+            "module": "pytest",
+            "name": "Debug Pytest",
+            "request": "launch",
+            "type": "debugpy"
+        },
+        {
+            "args": [
+                "server.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--reload"
+            ],
+            "cwd": "${workspaceFolder}/src",
+            "justMyCode": false,
+            "module": "uvicorn",
+            "name": "Debug server",
+            "request": "launch",
+            "type": "debugpy",
+            "console": "externalTerminal"
+        },
+        {
+            "cwd": "${workspaceFolder}/src",
+            "justMyCode": true,
+            "name": "Python: Current File",
+            "program": "${file}",
+            "request": "launch",
+            "type": "debugpy",
+            "console": "integratedTerminal"
+        }
+    ],
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=840487
+    "version": "0.2.0"
+}
