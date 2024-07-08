@@ -68,20 +68,43 @@ async def health():
     return {"time": datetime.now().isoformat()}
 
 
-# TODO: update this below per notebook
-# /baseline_allocate
-# /ml_allocate_embeddings
-# /ml_allocate_cosine_similarity
 @app.post("/baseline_allocate")
 @cache(expire=60)
 async def baseline_allocate(stocks: StockInputs) -> Allocations:
     """
-    This endpoint calibrates the allocation weights using the statistical methods.
-    This endpoint's return is cached for 60 seconds.
+    Calibrates the allocation weights using the statistical methods.
+    Return is cached for 60 seconds.
     """
 
-    # perform predictions
-    predictions = [123]  # model.predict(houses.to_numpy())
+    weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
 
     # construct the output
-    return Allocations(prices=predictions)
+    return Allocations(weights=weights)
+
+
+@app.post("/ml_allocate_cosine_similarity")
+@cache(expire=60)
+async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
+    """
+    Calibrates the allocation weights using ml-generated cosine similarity.
+    Return is cached for 60 seconds.
+    """
+
+    weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
+
+    # construct the output
+    return Allocations(weights=weights)
+
+
+@app.post("/ml_allocate_embeddings")
+@cache(expire=60)
+async def ml_allocate_embeddings(stocks: StockInputs) -> Allocations:
+    """
+    Calibrates the allocation weights using ml-generated embeddings.
+    Return is cached for 60 seconds.
+    """
+
+    weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
+
+    # construct the output
+    return Allocations(weights=weights)

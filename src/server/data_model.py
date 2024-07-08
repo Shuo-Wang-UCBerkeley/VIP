@@ -8,19 +8,14 @@ Input data models
 """
 
 
-class House(BaseModel):
+class StockPara(BaseModel):
     """
-    input data model for the singular predict endpoint.
+    input data model for the singular input.
     """
 
-    med_income: float = Field(ge=0, description="Median Income must be >=0")
-    house_age: float = Field(ge=0, description="House Age must be >=0")
-    ave_room_num: float = Field(ge=0, description="Average Rooms must be >=0")
-    ave_bedrm_num: float = Field(ge=0, description="Average Bedroom must be >=0")
-    population: float = Field(ge=0, description="Population must be >=0")
-    ave_occup: float = Field(ge=0, description="Average Occupancy must be >=0")
-    latitude: float
-    longitude: float
+    ticker: str = Field(description="Stock Ticker")
+    weight_lower_bound: float = Field(ge=0, description="Weight lower bound, must be >=0 (no shorting)", default=0.0)
+    weight_upper_bound: float = Field(le=1, description="Weight upper bound, must be <=1 (no leverage)", default=1.0)
 
     def to_numpy(self):
         """
@@ -31,43 +26,45 @@ class House(BaseModel):
         """
         return np.fromiter(self.model_dump().values(), float)
 
+    def get_bounds(self):
+        """
+        get the weight bounds for the stock
+
+        Returns:
+            tuple: weight bounds
+        """
+        return (self.weight_lower_bound, self.weight_upper_bound)
+
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
             "examples": [
                 {
-                    "med_income": 8.3,
-                    "house_age": 41.0,
-                    "ave_room_num": 7.1,
-                    "ave_bedrm_num": 1.02,
-                    "population": 322.0,
-                    "ave_occup": 2.56,
-                    "latitude": 37.88,
-                    "longitude": -122.23,
+                    "ticker": "AAPL",
+                    "weight_lower_bound": 0.05,
+                    "weight_upper_bound": 0.15,
                 }
             ]
         },
     )
 
-    @field_validator("latitude")
-    def validate_latitude(cls, latitude_input):
-        if latitude_input < -90 or latitude_input > 90:
-            raise ValueError("Latitude must be between -90 and 90 degrees!")
-        return latitude_input
-
-    @field_validator("longitude")
-    def validate_longtitude(cls, longitude_input):
-        if longitude_input < -180 or longitude_input > 180:
-            raise ValueError("Longitude must be between -180 and 180 degrees!")
-        return longitude_input
+    @field_validator("weight_upper_bound")
+    def validate_weight_upper_bound(cls, weight_upper_bound_input):
+        if weight_upper_bound_input < cls.weight_lower_bound:
+            raise ValueError(f"Unsolvable for stock {cls.ticker}: Upper bound must be higher than lower bound!")
+        return weight_upper_bound_input
 
 
 class StockInputs(BaseModel):
     """
-    input data model for the bulk predict endpoint.
+    input data model for the list of inputs.
     """
 
-    houses: list[House]
+    stockList: list[StockPara]
+    risk_tolerance: str = Field(description="Risk tolerance level, options: 'low', 'high'", default="low")
+    """
+    low risk tolerance will use minimum variance optimization, high risk tolerance will use max sharpe ratio optimization
+    """
 
     def to_numpy(self):
         """
@@ -76,34 +73,48 @@ class StockInputs(BaseModel):
         Returns:
             ndarray: 2D numpy array
         """
-        return np.vstack([h.to_numpy() for h in self.houses])
+        return np.vstack([s.to_numpy() for s in self.stockList])
+
+    def get_tickers(self):
+        """
+        get the tickers for the stocks
+
+        Returns:
+            list: tickers
+        """
+        return [h.ticker for h in self.stockList]
+
+    def get_bounds(self):
+        """
+        get the weight bounds for the stocks
+
+        Returns:
+            tuple: weight bounds
+        """
+        return [h.get_bounds() for h in self.stockList]
 
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
-                    "houses": [
+                    "stockList": [
                         {
-                            "med_income": 8.3,
-                            "house_age": 41.0,
-                            "ave_room_num": 7.1,
-                            "ave_bedrm_num": 1.02,
-                            "population": 322.0,
-                            "ave_occup": 2.56,
-                            "latitude": 37.88,
-                            "longitude": -122.23,
+                            "ticker": "AAPL",
+                            "weight_lower_bound": 0.05,
+                            "weight_upper_bound": 0.15,
                         },
                         {
-                            "med_income": 8.3,
-                            "house_age": 41.0,
-                            "ave_room_num": 7.1,
-                            "ave_bedrm_num": 1.02,
-                            "population": 322.0,
-                            "ave_occup": 2.56,
-                            "latitude": 37.88,
-                            "longitude": -122.23,
+                            # fixed weight
+                            "ticker": "AMZN",
+                            "weight_lower_bound": 0.35,
+                            "weight_upper_bound": 0.35,
                         },
-                    ]
+                        {
+                            # unconstrained weight
+                            "ticker": "GOOGL",
+                        },
+                    ],
+                    "risk_tolerance": "low",
                 }
             ]
         },
@@ -115,7 +126,7 @@ Output data models
 """
 
 
-class Price(BaseModel):
+class Allocation(BaseModel):
     """
     output prediction price for the singular predict endpoint.
     """
@@ -128,5 +139,21 @@ class Allocations(BaseModel):
     output prediction price for the bulk predict endpoint.
     """
 
+    weights: dict[str, float] = Field(description="Stock ticker to suggested weights")
+
+    # descriptive statistics for the portfolio, based on testing data (historical)
+    portfolio_return: float
+    portfolio_vol: float
+    portfolio_sharpe: float
+    index_return: float
+    index_vol: float
+    index_sharpe: float
+
     hash_key: UUID = Field(default_factory=uuid4)
-    prices: list[float]
+
+    # validation on weights sum to 1
+    @field_validator("weights")
+    def validate_weights(cls, weights_input):
+        if not np.isclose(sum(weights_input.values()), 1):
+            raise ValueError("Weights must sum to 1!")
+        return weights_input
