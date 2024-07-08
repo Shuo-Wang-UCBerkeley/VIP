@@ -126,30 +126,27 @@ Output data models
 """
 
 
-class Allocation(BaseModel):
+class PortfolioMeta(BaseModel):
     """
-    output prediction price for the singular predict endpoint.
+    portfolio meta data based on testing period performance.
     """
 
-    price: float
+    name: str = Field(description="Portfolio name")
+    return_mean: float = Field(description="Mean return")
+    return_std: float = Field(description="Standard deviation of return")
+    sharpe_ratio: float = Field(description="Sharpe ratio")
 
 
 class Allocations(BaseModel):
     """
-    output prediction price for the bulk predict endpoint.
+    output allocation weights and stats.
     """
 
     weights: dict[str, float] = Field(description="Stock ticker to suggested weights")
-
-    # descriptive statistics for the portfolio, based on testing data (historical)
-    portfolio_return: float
-    portfolio_vol: float
-    portfolio_sharpe: float
-    index_return: float
-    index_vol: float
-    index_sharpe: float
-
-    hash_key: UUID = Field(default_factory=uuid4)
+    portfolio_meta: list[PortfolioMeta] = Field(
+        description="Portfolio metadata, for both the allocated portfolio and S&P 500 index."
+    )
+    hash_key: UUID = Field(default_factory=uuid4, description="Unique hash key per return, used to validate cache")
 
     # validation on weights sum to 1
     @field_validator("weights")
