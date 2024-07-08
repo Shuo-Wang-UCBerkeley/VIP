@@ -16,7 +16,7 @@ from src.server.data_model import Allocations, House, Price, StockInputs
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
-# TODO: replace this with the S3 download of the stock embeddings
+# TODO: replace this with the S3 download of the stock embeddings, and generate the cosine similarity matrix
 # TODO: put embeddings into the REDIS for faster access
 # model_path = Path(__file__).parent.parent / "model_pipeline.pkl"
 # model = joblib.load(model_path)
