@@ -62,7 +62,7 @@ class House(BaseModel):
         return longitude_input
 
 
-class BulkHouses(BaseModel):
+class StockInputs(BaseModel):
     """
     input data model for the bulk predict endpoint.
     """
@@ -123,7 +123,7 @@ class Price(BaseModel):
     price: float
 
 
-class BulkPrices(BaseModel):
+class Allocations(BaseModel):
     """
     output prediction price for the bulk predict endpoint.
     """

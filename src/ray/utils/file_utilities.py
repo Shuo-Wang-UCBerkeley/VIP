@@ -1,10 +1,13 @@
 import os
+from pathlib import Path
 
 import boto3
 import pandas as pd
 
 s3 = boto3.client("s3")
 bucket = "capstone-bucket-4-friends"
+current_dir = Path(__file__).parent.resolve()
+data_dir = current_dir.joinpath("../../../data").resolve()
 
 
 def convert_csv_to_parquet(csv_key, delete_file=False):
@@ -39,21 +42,21 @@ def convert_csv_to_parquet(csv_key, delete_file=False):
             print(f"Error deleting the file '{file_path}': {e.strerror}")
 
 
-def s3_download(s3_path):
+def s3_download(s3_path) -> str:
     """
     download from s3 into the data folder.
 
     Returns:
         the target file path in local folder
     """
+    # print(data_dir)
     file_name = s3_path.split("/")[1]
     # print(file_name)
-    target_path = f"../../data/{file_name}"
+    target_path = data_dir.joinpath(file_name).absolute()
     # print(target_path)
-
     s3.download_file(bucket, s3_path, target_path)
 
-    return os.path.abspath(target_path)
+    return str(target_path)
 
 
 def s3_upload(s3_path):
@@ -64,5 +67,5 @@ def s3_upload(s3_path):
         the target file path in local folder
     """
     file_name = s3_path.split("/")[1]
-    data_path = f"../../data/{file_name}"
-    s3.upload_file(bucket, s3_path, data_path)
+    file_path = data_dir.joinpath(file_name).absolute()
+    s3.upload_file(file_path, bucket, s3_path)

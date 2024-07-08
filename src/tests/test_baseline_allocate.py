@@ -8,7 +8,7 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 
 from src.server.main import app
 
-bulk_calibrate_endpoint = "/bulk_calibrate"
+baseline_allocate_endpoint = "/baseline_allocate"
 
 
 @pytest.fixture(autouse=True)
@@ -85,7 +85,7 @@ def _init_cache() -> Generator[Any, Any, None]:
 def test_bulk_houses_model(input, expected_code):
     with TestClient(app) as client:
         # test the first call
-        response = client.post(bulk_calibrate_endpoint, json=input)
+        response = client.post(baseline_allocate_endpoint, json=input)
         assert response.status_code == expected_code
         response_json = response.json()
 
@@ -99,7 +99,7 @@ def test_bulk_houses_model(input, expected_code):
         # test cache a little bit -> should return the same hash_key
         previous_hash_key = response_json["hash_key"]
 
-        new_response = client.post(bulk_calibrate_endpoint, json=input)
+        new_response = client.post(baseline_allocate_endpoint, json=input)
         assert new_response.status_code == expected_code
         new_response_json = new_response.json()
 
@@ -125,7 +125,7 @@ def test_bulk_calibrate_with_extra_input():
     }
 
     with TestClient(app) as client:
-        response = client.post(bulk_calibrate_endpoint, json=houses_data)
+        response = client.post(baseline_allocate_endpoint, json=houses_data)
         assert response.status_code == 422
         assert "detail" in response.json()
         assert "Extra inputs are not permitted" in response.json()["detail"][0]["msg"]
@@ -147,7 +147,7 @@ def test_bulk_calibrate_with_missing_input():
     }
 
     with TestClient(app) as client:
-        response = client.post(bulk_calibrate_endpoint, json=houses_data)
+        response = client.post(baseline_allocate_endpoint, json=houses_data)
         assert response.status_code == 422
         assert "detail" in response.json()
         assert "Field required" in response.json()["detail"][0]["msg"]
@@ -170,7 +170,7 @@ def test_bulk_calibrate_with_invalid_negative_input():
     }
 
     with TestClient(app) as client:
-        response = client.post(bulk_calibrate_endpoint, json=houses_data)
+        response = client.post(baseline_allocate_endpoint, json=houses_data)
         assert response.status_code == 422
         assert "detail" in response.json()
         assert "greater than or equal to 0" in response.json()["detail"][0]["msg"]
@@ -193,7 +193,7 @@ def test_bulk_calibrate_with_bad_input():
     }
 
     with TestClient(app) as client:
-        response = client.post(bulk_calibrate_endpoint, json=houses_data)
+        response = client.post(baseline_allocate_endpoint, json=houses_data)
         assert response.status_code == 422
         assert "detail" in response.json()
         assert "Input should be a valid number" in response.json()["detail"][0]["msg"]

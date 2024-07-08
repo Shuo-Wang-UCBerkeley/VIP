@@ -11,12 +11,13 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from src.server.data_model import BulkHouses, BulkPrices, House, Price
+from src.server.data_model import Allocations, House, Price, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
-# TODO: replace this with the S3 download of the cosine similarity
+# TODO: replace this with the S3 download of the stock embeddings
+# TODO: put embeddings into the REDIS for faster access
 # model_path = Path(__file__).parent.parent / "model_pipeline.pkl"
 # model = joblib.load(model_path)
 
@@ -68,11 +69,14 @@ async def health():
 
 
 # TODO: update this below per notebook
-@app.post("/bulk_calibrate")
+# /baseline_allocate
+# /ml_allocate_embeddings
+# /ml_allocate_cosine_similarity
+@app.post("/baseline_allocate")
 @cache(expire=60)
-async def bulk_calibrate(houses: BulkHouses) -> BulkPrices:
+async def baseline_allocate(stocks: StockInputs) -> Allocations:
     """
-    This endpoint performs bulk predictions using the model loaded in memory.
+    This endpoint calibrates the allocation weights using the statistical methods.
     This endpoint's return is cached for 60 seconds.
     """
 
@@ -80,4 +84,4 @@ async def bulk_calibrate(houses: BulkHouses) -> BulkPrices:
     predictions = [123]  # model.predict(houses.to_numpy())
 
     # construct the output
-    return BulkPrices(prices=predictions)
+    return Allocations(prices=predictions)

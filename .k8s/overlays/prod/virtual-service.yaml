@@ -11,9 +11,11 @@ spec:
   http:
     - match:
         - uri:
-            exact: /predict
+            exact: /baseline_allocate
         - uri:
-            exact: /bulk_predict
+            exact: /ml_allocate_embeddings
+        - uri:
+            exact: /ml_allocate_cosine_similarity    
         - uri:
             prefix: /hello
         - uri:

@@ -1,6 +1,6 @@
 # pip install --upgrade -r matplotlib
 scipy==1.12.0
-wrds
+# wrds
 # PyPortfolioOpt >1.13
 yfinance
 seaborn

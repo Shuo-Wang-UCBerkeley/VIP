@@ -8,6 +8,7 @@ __pycache__/
 !requirements.txt
 poetry.lock
 *.DS_Store
+dump.rdb
 
 # C extensions
 *.so
