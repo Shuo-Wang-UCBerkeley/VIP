@@ -11,7 +11,7 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from src.server.data_model import Allocations, PortfolioSummary, StockInputs
+from server.data_model import Allocations, PortfolioSummary, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
