@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.csv
 *.parquet
+*.pkl
 *.txt
 !requirements.txt
 poetry.lock
