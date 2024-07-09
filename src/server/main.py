@@ -11,7 +11,7 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from src.server.data_model import Allocations, House, Price, StockInputs
+from src.server.data_model import Allocations, PortfolioSummary, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
@@ -77,9 +77,22 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     """
 
     weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
+    summeries = [
+        PortfolioSummary(
+            name="baseline",
+            return_mean=0.1,
+            return_std=0.2,
+            sharpe_ratio=0.5,
+        ),
+        PortfolioSummary(
+            name="index",
+            return_mean=0.2,
+            return_std=0.4,
+            sharpe_ratio=0.5,
+        ),
+    ]
 
-    # construct the output
-    return Allocations(weights=weights)
+    return Allocations(weights=weights, summaries=summeries)
 
 
 @app.post("/ml_allocate_cosine_similarity")
@@ -91,9 +104,22 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     """
 
     weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
+    summeries = [
+        PortfolioSummary(
+            name="baseline",
+            return_mean=0.1,
+            return_std=0.2,
+            sharpe_ratio=0.5,
+        ),
+        PortfolioSummary(
+            name="index",
+            return_mean=0.2,
+            return_std=0.4,
+            sharpe_ratio=0.5,
+        ),
+    ]
 
-    # construct the output
-    return Allocations(weights=weights)
+    return Allocations(weights=weights, summaries=summeries)
 
 
 @app.post("/ml_allocate_embeddings")
@@ -105,6 +131,19 @@ async def ml_allocate_embeddings(stocks: StockInputs) -> Allocations:
     """
 
     weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
+    summeries = [
+        PortfolioSummary(
+            name="baseline",
+            return_mean=0.1,
+            return_std=0.2,
+            sharpe_ratio=0.5,
+        ),
+        PortfolioSummary(
+            name="index",
+            return_mean=0.2,
+            return_std=0.4,
+            sharpe_ratio=0.5,
+        ),
+    ]
 
-    # construct the output
-    return Allocations(weights=weights)
+    return Allocations(weights=weights, summaries=summeries)

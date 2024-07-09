@@ -126,7 +126,7 @@ Output data models
 """
 
 
-class PortfolioMeta(BaseModel):
+class PortfolioSummary(BaseModel):
     """
     portfolio meta data based on testing period performance.
     """
@@ -143,7 +143,7 @@ class Allocations(BaseModel):
     """
 
     weights: dict[str, float] = Field(description="Stock ticker to suggested weights")
-    portfolio_meta: list[PortfolioMeta] = Field(
+    summaries: list[PortfolioSummary] = Field(
         description="Portfolio metadata, for both the allocated portfolio and S&P 500 index."
     )
     hash_key: UUID = Field(default_factory=uuid4, description="Unique hash key per return, used to validate cache")
