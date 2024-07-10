@@ -15,32 +15,6 @@ def print_non_zero_weights(tickers, weights):
             print(f"{tickers[i]}: {weights[i]}")
 
 
-def portfolio_return(weights, ret):
-    portfolio_return = np.dot(ret, weights)  # annualize data; ~250 trading days in a year
-    return portfolio_return
-
-
-def portfolio_culmulative_return(weights, ret):
-    """
-    This assumes the portfolio is rebalanced at the end of each day, thus the weights are constant
-    """
-    return ret.dot(weights).add(1).cumprod().subtract(1).multiply(100)
-
-
-def portfolio_std(weights, ret):
-    portfolio_std = np.dot(ret, weights).std() * np.sqrt(250)
-    return portfolio_std
-
-
-# def portfolio_std(weights, covariance):
-#     portfolio_std = np.sqrt(np.dot(weights.T, np.dot(covariance, weights)) * 250)
-#     return portfolio_std
-
-
-def portfolio_sharpe(ret, std):
-    return ret / std
-
-
 def minimum_variance(ret):
     def find_port_variance(weights):
         # this is actually std
