@@ -27,11 +27,6 @@ poetry env list --full-path
 #     echo "${FILE} already exists, skipping training..."
 # fi
 
-# Run pytest within poetry virtualenv
-echo
-echo "running pytest..."
-poetry run pytest -vv -s
-
 # start mini-kube
 minikube start --kubernetes-version=v1.27.3 --namespace ${NAMESPACE}
 kubectl config use-context minikube

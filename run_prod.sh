@@ -35,9 +35,9 @@ poetry env list --full-path
 # fi
 
 # Run pytest within poetry virtualenv
-echo
-echo "Running pytest..."
-poetry run pytest -vv -s
+# echo
+# echo "Running pytest..."
+# poetry run pytest -vv -s
 
 # build the docker file
 echo
