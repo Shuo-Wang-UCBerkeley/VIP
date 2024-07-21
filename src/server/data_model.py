@@ -142,7 +142,7 @@ class Allocations(BaseModel):
     output allocation weights and stats.
     """
 
-    weights: dict[str, float] = Field(description="Stock ticker to suggested weights")
+    ticker_weights: dict[str, float] = Field(description="Stock ticker to suggested weights")
     summaries: list[PortfolioSummary] = Field(
         description="Portfolio metadata, for both the allocated portfolio and S&P 500 index."
     )

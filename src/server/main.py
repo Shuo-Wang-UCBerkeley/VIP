@@ -9,18 +9,15 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from ray.optimizer.portfolios import *
-from ray.optimizer.strategies import *
-from server.data_factory import *
+from ray.optimizer.portfolios import portfolio_performance
+from ray.optimizer.strategies import max_sharpe, minimum_variance
+from server.data_factory import cache_data
 from server.data_model import Allocations, PortfolioSummary, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
-# TODO: replace local cache with redis?
-train, test = load_data(refresh_train=False, refresh_test=False)
-corr_matrix = load_corr_matrix()
-embeddings = load_embeddings()
+_data = cache_data(refresh_train=False, refresh_test=False)
 
 
 @asynccontextmanager
@@ -56,24 +53,6 @@ app = FastAPI(
 #     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
 
-@app.get("/hello")
-@cache(expire=60)
-async def hello(name: str):
-    """
-    This endpoint returns a message with the name passed as a query parameter.
-    """
-    message = f"hello {name}"
-    return {"message": message}
-
-
-@app.get("/health")
-async def health():
-    """
-    This endpoint returns the current date/time in ISO8601 format.
-    """
-    return {"time": datetime.now().isoformat()}
-
-
 @app.post("/baseline_allocate")
 @cache(expire=60)
 async def baseline_allocate(stocks: StockInputs) -> Allocations:
@@ -83,28 +62,28 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     """
 
     tickers = stocks.get_tickers()
-    missing_tickers = [t for t in tickers if t not in corr_matrix]
+    missing_tickers = [t for t in tickers if t not in _data.corr_matrix]
     if len(missing_tickers) > 0:
         raise ValueError(f"Tickers not found in the correlation matrix: {missing_tickers}")
 
-    filtered_corr_matrix = corr_matrix.loc[tickers, tickers]
-    ret_train = train[tickers]
-    ret_test = test[tickers]
+    filtered_corr_matrix = _data.corr_matrix.loc[tickers, tickers]
+    train = _data.train[tickers]
+    test = _data.test[tickers]
+    index = _data.test["SPY"]
 
     """
     TODO:
         - pass in the bounds
         - use the corralation matrix instead of training return
-        - refresh the cache from a certain endpoints?
     """
 
     if stocks.risk_tolerance == "low":
-        weights = minimum_variance(ret_train)
+        weights = minimum_variance(train)
     elif stocks.risk_tolerance == "high":
-        weights = max_sharpe(ret_train)
+        weights = max_sharpe(train)
     elif stocks.risk_tolerance == "moderate":
-        weight_1 = minimum_variance(ret_train)
-        weight_2 = max_sharpe(ret_train)
+        weight_1 = minimum_variance(train)
+        weight_2 = max_sharpe(train)
         # take the average from these two list of weights
         weights = [(w1 + w2) / 2 for w1, w2 in zip(weight_1, weight_2)]
 
@@ -112,10 +91,10 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     port_weight_dict["baseline"] = weights
 
     # calcualte the portfolio performance using the test data and weights
-    summeries = portfolio_performance(port_weight_dict, ret_test, test["SPY"])
-    weight_dict = {t: w for t, w in zip(tickers, weights)}
+    summeries = portfolio_performance(port_weight_dict, test, index)
+    ticker_weights = {t: w for t, w in zip(tickers, weights)}
 
-    return Allocations(weights=weight_dict, summaries=summeries)
+    return Allocations(ticker_weights=ticker_weights, summaries=summeries)
 
 
 @app.post("/ml_allocate_cosine_similarity")
@@ -129,44 +108,59 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
     summeries = [
         PortfolioSummary(
-            name="baseline",
+            name="ml_cosine_similarity",
             return_mean=0.1,
             return_std=0.2,
             sharpe_ratio=0.5,
-        ),
-        PortfolioSummary(
-            name="index",
-            return_mean=0.2,
-            return_std=0.4,
-            sharpe_ratio=0.5,
+            total_return=0.1,
         ),
     ]
 
-    return Allocations(weights=weights, summaries=summeries)
+    return Allocations(ticker_weights=weights, summaries=summeries)
 
 
-@app.post("/ml_allocate_embeddings")
+@app.get("/refresh_data")
 @cache(expire=60)
-async def ml_allocate_embeddings(stocks: StockInputs) -> Allocations:
+async def refresh_data():
     """
-    Calibrates the allocation weights using ml-generated embeddings.
-    Return is cached for 60 seconds.
+    refresh the data from the s3 bucket and yahoo finance.
     """
+    global _data
+    _data = cache_data(refresh_train=True, refresh_test=True)
 
-    weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
-    summeries = [
-        PortfolioSummary(
-            name="baseline",
-            return_mean=0.1,
-            return_std=0.2,
-            sharpe_ratio=0.5,
-        ),
-        PortfolioSummary(
-            name="index",
-            return_mean=0.2,
-            return_std=0.4,
-            sharpe_ratio=0.5,
-        ),
-    ]
+    return {f"message: Data refreshed. Newest test data: {_data.test.index.max()}"}
 
-    return Allocations(weights=weights, summaries=summeries)
+
+@app.get("/health")
+async def health():
+    """
+    This endpoint returns the current date/time in ISO8601 format.
+    """
+    return {"time": datetime.now().isoformat()}
+
+
+# @app.post("/ml_allocate_embeddings")
+# @cache(expire=60)
+# async def ml_allocate_embeddings(stocks: StockInputs) -> Allocations:
+#     """
+#     Calibrates the allocation weights using ml-generated embeddings.
+#     Return is cached for 60 seconds.
+#     """
+
+#     weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
+#     summeries = [
+#         PortfolioSummary(
+#             name="baseline",
+#             return_mean=0.1,
+#             return_std=0.2,
+#             sharpe_ratio=0.5,
+#         ),
+#         PortfolioSummary(
+#             name="index",
+#             return_mean=0.2,
+#             return_std=0.4,
+#             sharpe_ratio=0.5,
+#         ),
+#     ]
+
+#     return Allocations(weights=weights, summaries=summeries)

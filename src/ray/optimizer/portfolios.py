@@ -61,6 +61,7 @@ def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index
             return_mean=annulized_return,
             return_std=annulized_vol,
             sharpe_ratio=annulized_return / annulized_vol,
+            total_return=total_return,
         )
         return_list.append(ps)
 

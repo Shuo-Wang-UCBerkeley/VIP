@@ -18,7 +18,7 @@ The API has the following endpoints:
 
 Other supporting endpoints include:
 
-- a "/hello" endpoint for returning `hello {NAME}`´
+- a "/refresh_data" endpoint for fetching the latest stock data from the Yahoo Finance API, and the latest stock embeddings from the S3 bucket
 - a "/health" endpoint for healthchecking
 - a "/docs" endpoint for the openapi documentation
 - a "/openapi.json" endpoint that returns a `json` object that meets the OpenAPI specification version `3+`
@@ -38,11 +38,3 @@ sh run_dev.sh
 ## How to run my application?
 
 To run the production version of the app, you can go to [here](https://caopuzheng.mids255.com/docs#) and try with the example data.
-
-## How to test my application?
-
-```bash
-poetry run pytest
-```
-
-All pytest tests should pass.

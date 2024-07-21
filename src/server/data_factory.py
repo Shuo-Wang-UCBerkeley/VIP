@@ -1,18 +1,39 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 import yfinance as yf
 
 from ray.utils.file_utilities import data_dir, s3_download
 
-train_s3_path = "CRSP/crsp_2018-2023_clean_3.parquet"
+TRAIN_S3_PATH = "CRSP/crsp_2018-2023_clean_3.parquet"
 
 # local storage path
+TRAIN_FILE_NAME = TRAIN_S3_PATH.split("/")[1]
+TRAIN_PATH = data_dir.joinpath(TRAIN_FILE_NAME).absolute()
+TICKER_LIST_PATH = data_dir.joinpath("ticker_list.pkl")
+CORR_PATH = data_dir.joinpath("corr_matrix.pkl")
 
-file_name = train_s3_path.split("/")[1]
-train_path = data_dir.joinpath(file_name).absolute()
-ticker_list_path = data_dir.joinpath("ticker_list.pkl")
-corr_matrix_path = data_dir.joinpath("corr_matrix.pkl")
-test_path = data_dir.joinpath("test.parquet").absolute()
+TEST_PATH = data_dir.joinpath("test.parquet").absolute()
+
+
+@dataclass
+class CacheData:
+    train: pd.DataFrame
+    test: pd.DataFrame
+    corr_matrix: pd.DataFrame
+    cosine_similarity: pd.DataFrame
+
+
+def cache_data(refresh_train=False, refresh_test=False):
+    train, test = load_data(refresh_train, refresh_test)
+    corr_matrix = load_corr_matrix()
+    cosine_similarity = load_embeddings()
+
+    # Create an instance of CacheData and populate it
+    cache_data = CacheData(train=train, test=test, corr_matrix=corr_matrix, cosine_similarity=cosine_similarity)
+
+    return cache_data
 
 
 def load_data(refresh_train=False, refresh_test=True):
@@ -21,16 +42,17 @@ def load_data(refresh_train=False, refresh_test=True):
     """
 
     if not data_dir.exists():
-        print("Creating data directory...")
+        print(f"Creating data directory in {data_dir}...")
         data_dir.mkdir()
 
     # cache the training return into memory
 
-    if refresh_train or not train_path.exists():
-        print("Downloading training data from s3...")
-        s3_download(train_s3_path)
+    if refresh_train or not TRAIN_PATH.exists():
+        print(f"Downloading training data from s3 {TRAIN_S3_PATH}...")
+        s3_download(TRAIN_S3_PATH)
 
-    train_df = pd.read_parquet(train_path)
+    # TODO: don't need to load train data if it's not refreshed
+    train_df = pd.read_parquet(TRAIN_PATH)
     train = train_df.pivot(index="date", columns="ticker", values="return")
 
     if train.isnull().sum().sum() > 0:
@@ -38,17 +60,17 @@ def load_data(refresh_train=False, refresh_test=True):
         train = train[train.columns[train.isnull().sum() == 0]]
 
     # write the ticker list to a file
-    ticker_list = train.columns
-    pd.to_pickle(ticker_list, ticker_list_path)
+    ticker_list = train.columns.tolist()
+    pd.to_pickle(ticker_list, TICKER_LIST_PATH)
 
     corr_matrix = train.corr()
-    pd.to_pickle(corr_matrix, corr_matrix_path)
+    pd.to_pickle(corr_matrix, CORR_PATH)
 
     print(f"Train data shape: {train.shape}, from {train.index.min()} to {train.index.max()}")
 
     # load the test return data (2024-01-02 till today)
 
-    if refresh_test or not test_path.exists():
+    if refresh_test or not TEST_PATH.exists():
         print("Downloading test data from Yahoo Finance...")
         test_tickers = ticker_list + ["SPY"]
         test_df = yf.download(test_tickers, start="2023-12-29")
@@ -68,9 +90,9 @@ def load_data(refresh_train=False, refresh_test=True):
         if test.isnull().sum().sum() > 0:
             print(f"still has null but filling with NaN: {test.isnull().sum()}")
             test = test.fillna(0)
-        test.to_parquet(test_path)
+        test.to_parquet(TEST_PATH)
     else:
-        test = pd.read_parquet(test_path)
+        test = pd.read_parquet(TEST_PATH)
     print(f"Test data shape: {test.shape}, from {test.index.min()} to {test.index.max()}")
 
     return train, test
@@ -80,7 +102,7 @@ def load_corr_matrix():
     """
     This function downloads the correlation matrix from local disk.
     """
-    corr_matrix = pd.read_pickle(corr_matrix_path)
+    corr_matrix = pd.read_pickle(CORR_PATH)
 
     return corr_matrix
 
@@ -91,6 +113,6 @@ def load_embeddings():
     TODO: load the embeddings from s3
     """
 
-    corr_matrix = pd.read_pickle(corr_matrix_path)
+    corr_matrix = pd.read_pickle(CORR_PATH)
 
     return corr_matrix
