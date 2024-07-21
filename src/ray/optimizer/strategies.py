@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-BOUND = (0, 1)  # bounds, change to (-1, 1) if shorting is allowed
+BOUND = (0, 1)
 
 
 def equal_weight(n):
@@ -15,7 +15,7 @@ def print_non_zero_weights(tickers, weights):
             print(f"{tickers[i]}: {weights[i]}")
 
 
-def minimum_variance(ret):
+def minimum_variance(ret, bounds: list[float] = None):
     def find_port_variance(weights):
         # this is actually std
         cov = ret.cov()
@@ -26,13 +26,13 @@ def minimum_variance(ret):
         return np.sum(weights) - 1
 
     n = len(ret.columns)
-    bounds_lim = [BOUND] * n
+    bounds_to_use = bounds if bounds is not None else [BOUND] * n
     constraint = {"type": "eq", "fun": weight_cons}
 
     optimal = minimize(
         fun=find_port_variance,
         x0=equal_weight(n),
-        bounds=bounds_lim,
+        bounds=bounds_to_use,
         constraints=constraint,
         method="SLSQP",
     )
@@ -40,7 +40,7 @@ def minimum_variance(ret):
     return list(optimal["x"])
 
 
-def max_sharpe(ret):
+def max_sharpe(ret, bounds=None):
     def sharpe_func(weights):
         hist_mean = ret.mean(axis=0).to_frame()
         hist_cov = ret.cov()
@@ -53,13 +53,13 @@ def max_sharpe(ret):
         return np.sum(weights) - 1
 
     n = len(ret.columns)
-    bounds_lim = [BOUND] * n  # change to (-1, 1) if you want to short
+    bounds_to_use = bounds if bounds is not None else [BOUND] * n
     constraint = {"type": "eq", "fun": weight_cons}
 
     optimal = minimize(
         fun=sharpe_func,
         x0=equal_weight(n),
-        bounds=bounds_lim,
+        bounds=bounds_to_use,
         constraints=constraint,
         method="SLSQP",
     )

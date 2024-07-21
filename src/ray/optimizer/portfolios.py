@@ -52,16 +52,16 @@ def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index
 
     for name, ret_series in portfolio_dict.items():
 
-        annulized_return = ret_series.mean() * 250
-        annulized_vol = ret_series.std() * np.sqrt(250)
-        total_return = (ret_series + 1).prod() - 1
+        annulized_return = ret_series.mean() * 250 * 100
+        annulized_vol = ret_series.std() * np.sqrt(250) * 100
+        total_return = ((ret_series + 1).prod() - 1) * 100
 
         ps = PortfolioSummary(
             name=name,
-            return_mean=annulized_return,
-            return_std=annulized_vol,
-            sharpe_ratio=annulized_return / annulized_vol,
+            mean_return=annulized_return,
             total_return=total_return,
+            volatility=annulized_vol,
+            sharpe_ratio=annulized_return / annulized_vol,
         )
         return_list.append(ps)
 

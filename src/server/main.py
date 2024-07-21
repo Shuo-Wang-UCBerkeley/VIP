@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     lifespan=lifespan,
     swagger_ui_parameters={
-        "syntaxHighlight.theme": "obsidian",
+        "syntaxHighlight.theme": "arta",
         "defaultModelExpandDepth": 1,
         "defaultModelRendering": "model",
     },
@@ -73,17 +73,16 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
 
     """
     TODO:
-        - pass in the bounds
         - use the corralation matrix instead of training return
     """
 
     if stocks.risk_tolerance == "low":
-        weights = minimum_variance(train)
+        weights = minimum_variance(train, stocks.get_bounds())
     elif stocks.risk_tolerance == "high":
-        weights = max_sharpe(train)
+        weights = max_sharpe(train, stocks.get_bounds())
     elif stocks.risk_tolerance == "moderate":
-        weight_1 = minimum_variance(train)
-        weight_2 = max_sharpe(train)
+        weight_1 = minimum_variance(train, stocks.get_bounds())
+        weight_2 = max_sharpe(train, stocks.get_bounds())
         # take the average from these two list of weights
         weights = [(w1 + w2) / 2 for w1, w2 in zip(weight_1, weight_2)]
 
@@ -109,10 +108,10 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     summeries = [
         PortfolioSummary(
             name="ml_cosine_similarity",
-            return_mean=0.1,
-            return_std=0.2,
-            sharpe_ratio=0.5,
+            mean_return=0.1,
             total_return=0.1,
+            volatility=0.2,
+            sharpe_ratio=0.5,
         ),
     ]
 

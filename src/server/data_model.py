@@ -98,6 +98,7 @@ class StockInputs(BaseModel):
                 {
                     "stockList": [
                         {
+                            # range of weights
                             "ticker": "AAPL",
                             "weight_lower_bound": 0.05,
                             "weight_upper_bound": 0.15,
@@ -111,6 +112,11 @@ class StockInputs(BaseModel):
                         {
                             # unconstrained weight
                             "ticker": "GOOGL",
+                        },
+                        {
+                            # only lower bound
+                            "ticker": "NVDA",
+                            "weight_lower_bound": 0.25,
                         },
                     ],
                     "risk_tolerance": "low",
@@ -131,10 +137,18 @@ class PortfolioSummary(BaseModel):
     """
 
     name: str = Field(description="Portfolio name")
-    return_mean: float = Field(description="Mean return")
-    return_std: float = Field(description="Standard deviation of return")
-    sharpe_ratio: float = Field(description="Sharpe ratio")
+    mean_return: float = Field(description="Mean return")
     total_return: float = Field(description="Total return for the test period")
+    volatility: float = Field(description="Standard deviation of return")
+    sharpe_ratio: float = Field(description="Sharpe ratio")
+
+    # constructor with rounding
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.mean_return = round(self.mean_return, 2)
+        self.total_return = round(self.total_return, 2)
+        self.volatility = round(self.volatility, 2)
+        self.sharpe_ratio = round(self.sharpe_ratio, 2)
 
 
 class Allocations(BaseModel):
@@ -146,10 +160,15 @@ class Allocations(BaseModel):
     summaries: list[PortfolioSummary] = Field(
         description="Portfolio metadata, for both the allocated portfolio and S&P 500 index."
     )
-    hash_key: UUID = Field(default_factory=uuid4, description="Unique hash key per return, used to validate cache")
+    # hash_key: UUID = Field(default_factory=uuid4, description="Unique hash key per return, used to validate cache")
+
+    # constructor with rounding
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.ticker_weights = {k: round(v, 4) for k, v in self.ticker_weights.items()}
 
     # validation on weights sum to 1
-    @field_validator("weights")
+    @field_validator("ticker_weights")
     def validate_weights(cls, weights_input):
         if not np.isclose(sum(weights_input.values()), 1):
             raise ValueError("Weights must sum to 1!")
