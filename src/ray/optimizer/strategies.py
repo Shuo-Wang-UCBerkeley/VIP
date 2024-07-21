@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 
-BOUND = (0, 0.1)  # bounds, change to (-1, 1) if shorting is allowed
+BOUND = (0, 1)  # bounds, change to (-1, 1) if shorting is allowed
 
 
 def equal_weight(n):

@@ -17,7 +17,7 @@ spec:
         - uri:
             exact: /ml_allocate_cosine_similarity    
         - uri:
-            prefix: /hello
+            prefix: /refresh_data
         - uri:
             prefix: /health
         - uri:

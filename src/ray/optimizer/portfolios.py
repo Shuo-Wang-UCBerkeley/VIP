@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from server.data_model import PortfolioSummary
+
 
 def portfolio_return(weights, ret):
     portfolio_return = np.dot(ret, weights)  # annualize data; ~250 trading days in a year
@@ -42,18 +44,29 @@ def correlation_to_covariance(correlation_matrix, standard_deviations):
 
 
 def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index: pd.Series, verbose: bool = False):
-    return_dict = {k: portfolio_return(v, return_df) for k, v in port_weight_dict.items()}
-    return_dict["Index"] = index
-    for name, ret in return_dict.items():
+
+    return_list = []
+
+    portfolio_dict = {k: portfolio_return(v, return_df) for k, v in port_weight_dict.items()}
+    portfolio_dict["Index"] = index
+
+    for name, ret_series in portfolio_dict.items():
+
+        annulized_return = ret_series.mean() * 250
+        annulized_vol = ret_series.std() * np.sqrt(250)
+        total_return = (ret_series + 1).prod() - 1
+
+        ps = PortfolioSummary(
+            name=name,
+            return_mean=annulized_return,
+            return_std=annulized_vol,
+            sharpe_ratio=annulized_return / annulized_vol,
+        )
+        return_list.append(ps)
 
         if verbose:
             print(f"---------- {name} ----------")
-        # print("Weights:", equally_weighted_weights)
-        annulized_return = ret.mean() * 250
-        annulized_vol = ret.std() * np.sqrt(250)
-        total_return = (ret + 1).prod() - 1
-
-        if verbose:
+            # print("Weights:", equally_weighted_weights)
             print(
                 f"Annualized Return: {annulized_return:.2%}",
             )
@@ -62,3 +75,5 @@ def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index
             print(f"Total Return: {total_return: .2%}")
 
             print()
+
+    return return_list

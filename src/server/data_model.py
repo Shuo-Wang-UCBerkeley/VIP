@@ -33,6 +33,9 @@ class StockPara(BaseModel):
         Returns:
             tuple: weight bounds
         """
+        if self.weight_lower_bound > self.weight_upper_bound:
+            raise ValueError(f"For ticker {self.ticker}, weight lower bound > weight upper bound!")
+
         return (self.weight_lower_bound, self.weight_upper_bound)
 
     model_config = ConfigDict(
@@ -48,12 +51,6 @@ class StockPara(BaseModel):
         },
     )
 
-    @field_validator("weight_upper_bound")
-    def validate_weight_upper_bound(cls, weight_upper_bound_input):
-        if weight_upper_bound_input < cls.weight_lower_bound:
-            raise ValueError(f"Unsolvable for stock {cls.ticker}: Upper bound must be higher than lower bound!")
-        return weight_upper_bound_input
-
 
 class StockInputs(BaseModel):
     """
@@ -61,7 +58,9 @@ class StockInputs(BaseModel):
     """
 
     stockList: list[StockPara]
-    risk_tolerance: str = Field(description="Risk tolerance level, options: 'low', 'high'", default="low")
+    risk_tolerance: str = Field(
+        description="Risk tolerance level, options: 'low', 'moderate' and 'high'", default="low"
+    )
     """
     low risk tolerance will use minimum variance optimization, high risk tolerance will use max sharpe ratio optimization
     """
@@ -135,6 +134,7 @@ class PortfolioSummary(BaseModel):
     return_mean: float = Field(description="Mean return")
     return_std: float = Field(description="Standard deviation of return")
     sharpe_ratio: float = Field(description="Sharpe ratio")
+    total_return: float = Field(description="Total return for the test period")
 
 
 class Allocations(BaseModel):
