@@ -13,6 +13,7 @@ TRAIN_FILE_NAME = TRAIN_S3_PATH.split("/")[1]
 TRAIN_PATH = data_dir.joinpath(TRAIN_FILE_NAME).absolute()
 TICKER_LIST_PATH = data_dir.joinpath("ticker_list.pkl")
 CORR_PATH = data_dir.joinpath("corr_matrix.pkl")
+COSINE_SIMILARITY_PATH = data_dir.joinpath("cosine_similarity.pkl")
 
 TEST_PATH = data_dir.joinpath("test.parquet").absolute()
 
@@ -28,7 +29,7 @@ class CacheData:
 def cache_data(refresh_train=False, refresh_test=False):
     train, test = load_data(refresh_train, refresh_test)
     corr_matrix = load_corr_matrix()
-    cosine_similarity = load_embeddings()
+    cosine_similarity = load_cosine_similarity()
 
     # Create an instance of CacheData and populate it
     cache_data = CacheData(train=train, test=test, corr_matrix=corr_matrix, cosine_similarity=cosine_similarity)
@@ -65,6 +66,8 @@ def load_data(refresh_train=False, refresh_test=True):
 
     corr_matrix = train.corr()
     pd.to_pickle(corr_matrix, CORR_PATH)
+
+    # TODO: s3 download the cosine similarity COSINE_SIMILARITY_PATH
 
     print(f"Train data shape: {train.shape}, from {train.index.min()} to {train.index.max()}")
 
@@ -107,12 +110,14 @@ def load_corr_matrix():
     return corr_matrix
 
 
-def load_embeddings():
+def load_cosine_similarity():
     """
     This function downloads the embeddings from s3 and return them as a dataframe, with the cosine similarity.
-    TODO: load the embeddings from s3
     """
 
-    corr_matrix = pd.read_pickle(CORR_PATH)
+    cosine_similarity = pd.read_pickle(CORR_PATH)
+    # TODO: load similarity instead of correlation
+    # cosine_similarity = pd.read_pickle(COSINE_SIMILARITY_PATH)
+    cosine_similarity.loc[:, :] = 0  # assume all is 0 for now
 
-    return corr_matrix
+    return cosine_similarity

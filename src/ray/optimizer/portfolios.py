@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from server.data_model import PortfolioSummary
+from ray.optimizer.strategies import max_sharpe, minimum_variance
+from server.data_factory import CacheData
+from server.data_model import Allocations, PortfolioSummary, StockInputs
 
 
 def portfolio_return(weights, ret):
@@ -21,26 +23,36 @@ def portfolio_std(weights, ret):
     return portfolio_std
 
 
-def portfolio_std_from_covariance(weights, covariance):
-    portfolio_std = np.sqrt(np.dot(weights.T, np.dot(covariance, weights)) * 250)
-    return portfolio_std
-
-
 def portfolio_sharpe(ret, std):
     return ret / std
 
 
-def correlation_to_covariance(correlation_matrix, standard_deviations):
-    correlation_matrix = np.array(correlation_matrix)
-    standard_deviations = np.array(standard_deviations)
+def optimize_portfolio(stocks: StockInputs, data: CacheData, coefficients: pd.DataFrame):
+    # data extraction from CacheData and StockInputs
+    tickers = stocks.get_tickers()
+    train = data.train[tickers]
+    test = data.test[tickers]
+    index = data.test["SPY"]
 
-    # Create a diagonal matrix of standard deviations
-    sd_matrix = np.diag(standard_deviations)
+    # decide the allocation strategy based on the risk tolerance
+    if stocks.risk_tolerance == "low":
+        weights = minimum_variance(train, stocks.get_bounds(), coeff=coefficients)
+    elif stocks.risk_tolerance == "high":
+        weights = max_sharpe(train, stocks.get_bounds(), corr=coefficients)
+    elif stocks.risk_tolerance == "moderate":
+        weight_1 = minimum_variance(train, stocks.get_bounds(), coeff=coefficients)
+        weight_2 = max_sharpe(train, stocks.get_bounds(), corr=coefficients)
+        # take the average from these two list of weights
+        weights = [(w1 + w2) / 2 for w1, w2 in zip(weight_1, weight_2)]
 
-    # Calculate the covariance matrix
-    covariance_matrix = sd_matrix @ correlation_matrix @ sd_matrix
+    # use the weights to calculate the portfolio performance
+    port_weight_dict = {}
+    port_weight_dict["recommendation"] = weights
 
-    return covariance_matrix
+    summeries = portfolio_performance(port_weight_dict, test, index)
+    ticker_weights = {t: w for t, w in zip(tickers, weights)}
+
+    return Allocations(ticker_weights=ticker_weights, summaries=summeries)
 
 
 def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index: pd.Series, verbose: bool = False):

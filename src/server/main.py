@@ -9,10 +9,9 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from ray.optimizer.portfolios import portfolio_performance
-from ray.optimizer.strategies import max_sharpe, minimum_variance
+from ray.optimizer.portfolios import optimize_portfolio
 from server.data_factory import cache_data
-from server.data_model import Allocations, PortfolioSummary, StockInputs
+from server.data_model import Allocations, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
@@ -66,34 +65,10 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     if len(missing_tickers) > 0:
         raise ValueError(f"Tickers not found in the correlation matrix: {missing_tickers}")
 
-    filtered_corr_matrix = _data.corr_matrix.loc[tickers, tickers]
-    train = _data.train[tickers]
-    test = _data.test[tickers]
-    index = _data.test["SPY"]
+    correlation = _data.corr_matrix.loc[tickers, tickers]
+    allocations = optimize_portfolio(stocks, _data, correlation)
 
-    """
-    TODO:
-        - use the corralation matrix instead of training return
-    """
-
-    if stocks.risk_tolerance == "low":
-        weights = minimum_variance(train, stocks.get_bounds())
-    elif stocks.risk_tolerance == "high":
-        weights = max_sharpe(train, stocks.get_bounds())
-    elif stocks.risk_tolerance == "moderate":
-        weight_1 = minimum_variance(train, stocks.get_bounds())
-        weight_2 = max_sharpe(train, stocks.get_bounds())
-        # take the average from these two list of weights
-        weights = [(w1 + w2) / 2 for w1, w2 in zip(weight_1, weight_2)]
-
-    port_weight_dict = {}
-    port_weight_dict["baseline"] = weights
-
-    # calcualte the portfolio performance using the test data and weights
-    summeries = portfolio_performance(port_weight_dict, test, index)
-    ticker_weights = {t: w for t, w in zip(tickers, weights)}
-
-    return Allocations(ticker_weights=ticker_weights, summaries=summeries)
+    return allocations
 
 
 @app.post("/ml_allocate_cosine_similarity")
@@ -104,18 +79,16 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     Return is cached for 60 seconds.
     """
 
-    weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
-    summeries = [
-        PortfolioSummary(
-            name="ml_cosine_similarity",
-            mean_return=0.1,
-            total_return=0.1,
-            volatility=0.2,
-            sharpe_ratio=0.5,
-        ),
-    ]
+    tickers = stocks.get_tickers()
+    missing_tickers = [t for t in tickers if t not in _data.cosine_similarity]
+    if len(missing_tickers) > 0:
+        raise ValueError(f"Tickers not found in the cosine_similarity matrix: {missing_tickers}")
 
-    return Allocations(ticker_weights=weights, summaries=summeries)
+    similarities = _data.cosine_similarity.loc[tickers, tickers]
+
+    allocations = optimize_portfolio(stocks, _data, similarities)
+
+    return allocations
 
 
 @app.get("/refresh_data")

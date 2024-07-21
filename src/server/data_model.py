@@ -65,6 +65,13 @@ class StockInputs(BaseModel):
     low risk tolerance will use minimum variance optimization, high risk tolerance will use max sharpe ratio optimization
     """
 
+    # validate the risk tolerance
+    @field_validator("risk_tolerance")
+    def validate_risk_tolerance(cls, risk_tolerance_input):
+        if risk_tolerance_input not in ["low", "moderate", "high"]:
+            raise ValueError("Risk tolerance must be one of 'low', 'moderate', 'high'!")
+        return risk_tolerance_input
+
     def to_numpy(self):
         """
         convert the input data into a numpy 2D array
@@ -119,7 +126,7 @@ class StockInputs(BaseModel):
                             "weight_lower_bound": 0.25,
                         },
                     ],
-                    "risk_tolerance": "low",
+                    "risk_tolerance": "moderate",
                 }
             ]
         },

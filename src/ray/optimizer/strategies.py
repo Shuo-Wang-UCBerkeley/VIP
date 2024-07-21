@@ -15,10 +15,23 @@ def print_non_zero_weights(tickers, weights):
             print(f"{tickers[i]}: {weights[i]}")
 
 
-def minimum_variance(ret, bounds: list[float] = None):
+def correlation_to_covariance(correlation_matrix, standard_deviations):
+    correlation_matrix = np.array(correlation_matrix)
+    standard_deviations = np.array(standard_deviations)
+
+    # Create a diagonal matrix of standard deviations
+    sd_matrix = np.diag(standard_deviations)
+
+    # Calculate the covariance matrix
+    covariance_matrix = sd_matrix @ correlation_matrix @ sd_matrix
+
+    return covariance_matrix
+
+
+def minimum_variance(ret, bounds: list[float] = None, coeff=None):
     def find_port_variance(weights):
         # this is actually std
-        cov = ret.cov()
+        cov = ret.cov() if coeff is None else correlation_to_covariance(coeff, ret.std())
         port_var = np.sqrt(np.dot(weights.T, np.dot(cov, weights)) * 250)
         return port_var
 
@@ -40,10 +53,10 @@ def minimum_variance(ret, bounds: list[float] = None):
     return list(optimal["x"])
 
 
-def max_sharpe(ret, bounds=None):
+def max_sharpe(ret, bounds=None, corr=None):
     def sharpe_func(weights):
         hist_mean = ret.mean(axis=0).to_frame()
-        hist_cov = ret.cov()
+        hist_cov = ret.cov() if corr is None else correlation_to_covariance(corr, ret.std())
 
         port_ret = np.dot(weights.T, hist_mean.values) * 250
         port_std = np.sqrt(np.dot(weights.T, np.dot(hist_cov, weights)) * 250)
