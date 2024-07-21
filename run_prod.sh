@@ -72,56 +72,9 @@ echo "Testing '/health' endpoint, expecting 200..."
 curl -o /dev/null -s -w "%{http_code}\n" -X GET \
   'https://caopuzheng.mids255.com/health' -H 'accept: application/json'
 
-# echo "Testing '/predict' endpoint, expecting an valid prediction output..."
-# curl -X 'POST' \
-#   'https://caopuzheng.mids255.com/predict' \
-#   -H 'accept: application/json' \
-#   -H 'Content-Type: application/json' \
-#   -d '{
-#   "ave_bedrm_num": 1.02,
-#   "ave_occup": 2.56,
-#   "ave_room_num": 7.1,
-#   "house_age": 41,
-#   "latitude": 37.88,
-#   "longitude": -122.23,
-#   "med_income": 8.3,
-#   "population": 322
-# }' | python -m json.tool
-
 # echo
 # echo "Testing '/bulk_predict' endpoint, expecting an valid prediction output..."
 # # Test bulk predict endpoint with valid input
-# curl -X 'POST' \
-#   'https://caopuzheng.mids255.com/bulk_predict' \
-#   -H 'accept: application/json' \
-#   -H 'Content-Type: application/json' \
-#   -d '{
-#   "houses": [
-#     {
-#       "ave_bedrm_num": 1.02,
-#       "ave_occup": 2.56,
-#       "ave_room_num": 7.1,
-#       "house_age": 41,
-#       "latitude": 37.88,
-#       "longitude": -122.23,
-#       "med_income": 8.3,
-#       "population": 322
-#     },
-#     {
-#       "ave_bedrm_num": 1.02,
-#       "ave_occup": 2.56,
-#       "ave_room_num": 7.1,
-#       "house_age": 41,
-#       "latitude": 37.88,
-#       "longitude": -122.23,
-#       "med_income": 8.3,
-#       "population": 322
-#     }
-#     ]
-#   }' | python -m json.tool
-
-# echo
-# echo "Testing '/bulk_predict' endpoint again, expecting the same hash_key per above..."
 # curl -X 'POST' \
 #   'https://caopuzheng.mids255.com/bulk_predict' \
 #   -H 'accept: application/json' \

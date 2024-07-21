@@ -59,19 +59,8 @@ echo "minikube tunnel started in pid: ${TUNNEL_PID}..."
 # kubectl port-forward -n=caopuzheng service/service-prediction 8000:8000
 
 # test the docker container
-echo
-echo "testing '/hello' endpoint with name=Winegar, expecting 200, 422..."
-curl -o /dev/null -s -w "%{http_code}\n" -X GET "http://localhost:8000/hello?name=Winegar"
-curl -o /dev/null -s -w "%{http_code}\n" -X GET "http://localhost:8000/hello?na=Winegar"
-
 echo "testing '/docs' endpoint, expecting 200..."
 curl -o /dev/null -s -w "%{http_code}\n" -X GET "http://localhost:8000/docs"
-
-# echo "testing '/predict' endpoint, expecting an valid prediction output..."
-# curl -X POST 'http://localhost:8000/predict' \
-#     -H 'accept: application/json' \
-#     -H 'Content-Type: application/json' \
-#     -d '{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}'
 
 # echo
 # echo "testing '/bulk_predict' endpoint, expecting an valid prediction output..."
