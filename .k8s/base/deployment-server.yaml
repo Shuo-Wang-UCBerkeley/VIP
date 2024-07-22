@@ -6,7 +6,7 @@ metadata:
   labels:
     app: server
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: server
@@ -23,11 +23,11 @@ spec:
             value: redis://redis:6379/
           resources:
             requests:
-              cpu: 200m
-              memory: 500Mi
-            limits:
               cpu: 500m
               memory: 1000Mi
+            limits:
+              cpu: 1000m
+              memory: 2000Mi
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000

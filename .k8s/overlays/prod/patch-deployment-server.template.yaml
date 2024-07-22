@@ -11,11 +11,11 @@ spec:
           image: w255mids.azurecr.io/caopuzheng/server_amd64:GIT_HASH
           resources:
             requests:
-              cpu: 200m
-              memory: 500Mi
-            limits:
               cpu: 500m
-              memory: 500Mi
+              memory: 1000Mi
+            limits:
+              cpu: 1000m
+              memory: 2000Mi
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

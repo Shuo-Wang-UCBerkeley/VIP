@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from ray.optimizer.strategies import max_sharpe, minimum_variance
-from server.data_factory import CacheData
-from server.data_model import Allocations, PortfolioSummary, StockInputs
+from src.ray.optimizer.strategies import max_sharpe, minimum_variance
+from src.server.data_factory import CacheData
+from src.server.data_model import Allocations, PortfolioSummary, StockInputs
 
 
 def portfolio_return(weights, ret):

@@ -10,6 +10,7 @@ __pycache__/
 poetry.lock
 .DS_Store
 dump.rdb
+temp/
 
 # C extensions
 *.so

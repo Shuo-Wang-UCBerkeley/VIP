@@ -9,13 +9,14 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from ray.optimizer.portfolios import optimize_portfolio
-from server.data_factory import cache_data
-from server.data_model import Allocations, StockInputs
+from src.ray.optimizer.portfolios import optimize_portfolio
+from src.server.data_factory import cache_data
+from src.server.data_model import Allocations, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
+# TODO: move this to redis
 _data = cache_data(refresh_train=False, refresh_test=False)
 
 
