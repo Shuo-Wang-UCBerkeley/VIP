@@ -1,6 +1,7 @@
 APP_NAME=server
 IMAGE_NAME=server_amd64
 NAMESPACE=caopuzheng
+URI=https://caopuzheng.mids255.com
 
 # change the directory to the current directory
 echo "changing directory to current script directory..."
@@ -23,16 +24,6 @@ echo "Creating environment..."
 # poetry env remove python3.11
 poetry install
 poetry env list --full-path
-
-# Train the model if model_pipeline.pkl does not exist
-# echo
-# FILE=./model_pipeline.pkl
-# if [ ! -f ${FILE} ]; then
-#   echo "Training model..."
-#   poetry run python ./trainer/train.py
-# else
-#   echo "${FILE} already exists, skipping training..."
-# fi
 
 # Run pytest within poetry virtualenv
 # echo
@@ -63,46 +54,31 @@ kubectl rollout status -w deployment/redis -n ${NAMESPACE}
 kubectl rollout status -w deployment/${APP_NAME} -n ${NAMESPACE}
 echo
 
-# test the {docs,health,predict,bulk_predict} endpoints
-echo "Testing '/docs' endpoint, expecting 200..."
-curl -o /dev/null -s -w "%{http_code}\n" -X GET \
-  'https://caopuzheng.mids255.com/docs' -H 'accept: application/json'
+# test the endpoints
+echo "testing '/docs' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X GET "$URI/docs"
 
-echo "Testing '/health' endpoint, expecting 200..."
-curl -o /dev/null -s -w "%{http_code}\n" -X GET \
-  'https://caopuzheng.mids255.com/health' -H 'accept: application/json'
+echo
+echo "testing '/baseline_allocate' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
+  "$URI/baseline_allocate" \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+            "risk_tolerance": "moderate",
+            "stockList": [{"ticker":"AAPL","weight_lower_bound":0.05,"weight_upper_bound":0.15},{"ticker":"AMZN","weight_lower_bound":0.35,"weight_upper_bound":0.35},{"ticker":"GOOGL"},{"ticker":"NVDA","weight_lower_bound":0.25}]
+        }'
 
-# echo
-# echo "Testing '/bulk_predict' endpoint, expecting an valid prediction output..."
-# # Test bulk predict endpoint with valid input
-# curl -X 'POST' \
-#   'https://caopuzheng.mids255.com/bulk_predict' \
-#   -H 'accept: application/json' \
-#   -H 'Content-Type: application/json' \
-#   -d '{
-#   "houses": [
-#     {
-#       "ave_bedrm_num": 1.02,
-#       "ave_occup": 2.56,
-#       "ave_room_num": 7.1,
-#       "house_age": 41,
-#       "latitude": 37.88,
-#       "longitude": -122.23,
-#       "med_income": 8.3,
-#       "population": 322
-#     },
-#     {
-#       "ave_bedrm_num": 1.02,
-#       "ave_occup": 2.56,
-#       "ave_room_num": 7.1,
-#       "house_age": 41,
-#       "latitude": 37.88,
-#       "longitude": -122.23,
-#       "med_income": 8.3,
-#       "population": 322
-#     }
-#     ]
-#   }' | python -m json.tool
+echo
+echo "testing '/ml_allocate_cosine_similarity' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
+  "$URI/ml_allocate_cosine_similarity" \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+            "risk_tolerance": "moderate",
+            "stockList": [{"ticker":"AAPL","weight_lower_bound":0.05,"weight_upper_bound":0.15},{"ticker":"AMZN","weight_lower_bound":0.35,"weight_upper_bound":0.35},{"ticker":"GOOGL"},{"ticker":"NVDA","weight_lower_bound":0.25}]
+        }'
 
 # output and tail the logs for the api deployment
 echo
@@ -115,10 +91,5 @@ echo "Prod deployment has been finished succesfully!"
 # start the port-forwarding of the grafana service
 echo
 kubectl port-forward -n prometheus svc/grafana 3000:3000
-
-# Below not needed per instructions of the lab4
-# echo "Cleaning up..."
-# kubectl delete --all deployments,services --namespace=caopuzheng
-# kubectl delete configmap redis --namespace=caopuzheng
 
 # In Prod, we can't delete the namespace as we don't have ability to recreate it

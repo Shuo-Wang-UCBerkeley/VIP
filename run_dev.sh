@@ -1,6 +1,8 @@
 APP_NAME=server
 IMAGE_NAME=server_arm64
 NAMESPACE=caopuzheng
+URI="http://localhost:8000"
+SHUT_DOWN_MINIKUBE=0
 
 # change the directory to the current directory
 echo "changing directory to current script directory..."
@@ -28,7 +30,9 @@ poetry env list --full-path
 # fi
 
 # start mini-kube
-minikube start --kubernetes-version=v1.27.3 --namespace ${NAMESPACE}
+if [ $SHUT_DOWN_MINIKUBE -eq 1 ]; then
+    minikube start --kubernetes-version=v1.27.3 --namespace ${NAMESPACE}
+fi
 kubectl config use-context minikube
 
 #Register local docker instance with minikube
@@ -52,41 +56,57 @@ kubectl rollout status -w deployment/${APP_NAME} -n ${NAMESPACE}
 echo
 
 # kill $(ps aux | grep "[m]inikube tunnel" | awk '{print $2}')
-sleep 15
-minikube tunnel
-# minikube tunnel &
-# TUNNEL_PID=$!
-echo "minikube tunnel ended..."
-# echo "minikube tunnel started in pid: ${TUNNEL_PID}..."
-# we shouldn't use this b/c port-forward won't really use the load balancer (using multiple pods)
-# kubectl port-forward -n=caopuzheng service/service-prediction 8000:8000
+minikube tunnel &
+TUNNEL_PID=$!
+sleep 8
+echo "minikube tunnel started in pid: ${TUNNEL_PID}..."
 
 # test the docker container
-# echo "testing '/docs' endpoint, expecting 200..."
-# curl -o /dev/null -s -w "%{http_code}\n" -X GET "http://localhost:8000/docs"
+echo "testing '/docs' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X GET "$URI/docs"
 
-# echo
-# echo "testing '/bulk_predict' endpoint, expecting an valid prediction output..."
-# # Test bulk predict endpoint with valid input
-# curl -X POST "http://localhost:8000/bulk_predict" \
-#     -H "Content-Type: application/json" \
-#     -d '{"houses": [{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322},{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}]}'
+echo
+echo "testing '/baseline_allocate' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
+    "$URI/baseline_allocate" \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{
+            "risk_tolerance": "moderate",
+            "stockList": [{"ticker":"AAPL","weight_lower_bound":0.05,"weight_upper_bound":0.15},{"ticker":"AMZN","weight_lower_bound":0.35,"weight_upper_bound":0.35},{"ticker":"GOOGL"},{"ticker":"NVDA","weight_lower_bound":0.25}]
+        }'
 
-output and tail the logs for the api deployment
+echo
+echo "testing '/ml_allocate_cosine_similarity' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
+    "$URI/ml_allocate_cosine_similarity" \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{
+            "risk_tolerance": "moderate",
+            "stockList": [{"ticker":"AAPL","weight_lower_bound":0.05,"weight_upper_bound":0.15},{"ticker":"AMZN","weight_lower_bound":0.35,"weight_upper_bound":0.35},{"ticker":"GOOGL"},{"ticker":"NVDA","weight_lower_bound":0.25}]
+        }'
+
+# output and tail the logs for the api deployment
 echo
 echo
 kubectl logs -n ${NAMESPACE} -l app=${APP_NAME}
 
 echo
 echo
+echo "Press any key to clean up..."
+read -n 1 -s
+
+echo
 echo "Cleaning up..."
 # kubectl delete namespace ${NAMESPACE} # this will also delete everything in it
 kubectl delete -k .k8s/overlays/dev
-# kubectl delete --all deployments,services --namespace ${NAMESPACE}
 # kubectl delete configmap redis --namespace=caopuzheng
 
 echo "stop the minikube tunnel..."
 # kill ${TUNNEL_PID}
 docker image rm ${IMAGE_NAME}
-# minikube stop
+if [ $SHUT_DOWN_MINIKUBE -eq 1 ]; then
+    minikube stop
+fi
 echo "The script has finished running properly!"
