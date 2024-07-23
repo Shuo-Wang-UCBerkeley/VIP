@@ -6,11 +6,6 @@ from src.server.data_factory import TrainData
 from src.server.data_model import Allocations, PortfolioSummary, StockInputs
 
 
-def portfolio_return(weights, ret):
-    portfolio_return = np.dot(ret, weights)  # annualize data; ~250 trading days in a year
-    return portfolio_return
-
-
 def portfolio_culmulative_return(weights, ret):
     """
     This assumes the portfolio is rebalanced at the end of each day, thus the weights are constant
@@ -45,23 +40,22 @@ def optimize_portfolio(stocks: StockInputs, train_data: TrainData, coefficients:
         # take the average from these two list of weights
         weights = [(w1 + w2) / 2 for w1, w2 in zip(weight_1, weight_2)]
 
-    port_weight_dict = {}
-    port_weight_dict["recommendation"] = weights
+    ticker_weights = {t: w for t, w in zip(tickers, weights)}
 
-    return port_weight_dict
+    return ticker_weights
 
 
 def portfolio_performance(
-    port_weight_dict: dict, testData: pd.DataFrame, tickers: list[str], verbose: bool = False
-) -> Allocations:
+    ticker_weights: dict, testData: pd.DataFrame, verbose: bool = False
+) -> list[PortfolioSummary]:
 
     # use the weights to calculate the portfolio performance
-
+    tickers = list(ticker_weights.keys())
+    weights = np.array(list(ticker_weights.values()))
     test = testData[tickers]
     index = testData["SPY"]
 
-    portfolio_dict = {k: portfolio_return(v, test) for k, v in port_weight_dict.items()}
-    portfolio_dict["Index"] = index
+    portfolio_dict = {"index": index, "recommendation": np.dot(test, weights)}
 
     summaries = []
     for name, ret_series in portfolio_dict.items():
@@ -83,14 +77,11 @@ def portfolio_performance(
             print(f"---------- {name} ----------")
             # print("Weights:", equally_weighted_weights)
             print(
-                f"Annualized Return: {annulized_return:.2%}",
+                f"Annualized Return: {annulized_return:.2}",
             )
-            print(f"Volatility: {annulized_vol: .2%}")
+            print(f"Volatility: {annulized_vol: .2}")
             print(f"Sharpe Ratio: {annulized_return / annulized_vol: .2f}")
-            print(f"Total Return: {total_return: .2%}")
+            print(f"Total Return: {total_return: .2}")
 
             print()
-
-    ticker_weights = {t: w for t, w in zip(tickers, port_weight_dict["recommendation"])}
-
-    return Allocations(ticker_weights=ticker_weights, summaries=summaries)
+    return summaries

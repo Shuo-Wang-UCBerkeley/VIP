@@ -66,10 +66,10 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     if len(missing_tickers) > 0:
         raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-    port_weight_dict = optimize_portfolio(stocks, _train, _train.corr_matrix)
-    allocations = portfolio_performance(port_weight_dict, _test, tickers)
+    ticker_weights = optimize_portfolio(stocks, _train, _train.corr_matrix)
+    summaries = portfolio_performance(ticker_weights, _test)
 
-    return allocations
+    return Allocations(ticker_weights=ticker_weights, summaries=summaries)
 
 
 @app.post("/ml_allocate_cosine_similarity")
@@ -85,10 +85,10 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     if len(missing_tickers) > 0:
         raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-    port_weight_dict = optimize_portfolio(stocks, _train, _train.cosine_similarity)
-    allocations = portfolio_performance(port_weight_dict, _test, tickers)
+    ticker_weights = optimize_portfolio(stocks, _train, _train.cosine_similarity)
+    summaries = portfolio_performance(ticker_weights, _test)
 
-    return allocations
+    return Allocations(ticker_weights=ticker_weights, summaries=summaries)
 
 
 @app.get("/refresh_data")
@@ -100,7 +100,7 @@ async def refresh_data():
     global _test
     _, _test = load_data(refresh_train=False, refresh_test=True)
 
-    return {f"message: Data refreshed. Newest test data: {_train.test.index.max()}"}
+    return {f"message: Data refreshed. Newest test data: {_test.index.max()}"}
 
 
 @app.get("/health")

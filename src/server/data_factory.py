@@ -31,10 +31,10 @@ class TrainData:
 
 def load_data(refresh_train=False, refresh_test=False) -> tuple[TrainData, pd.DataFrame]:
 
-    train = load_train_data(refresh_train)
-    test = load_test_data(ticker_list=train.ticker_list, refresh_test=refresh_test)
+    train_data = load_train_data(refresh_train)
+    test = load_test_data(ticker_list=train_data.ticker_list, refresh_test=refresh_test)
 
-    return train, test
+    return train_data, test
 
 
 def load_train_data(refresh_train) -> TrainData:
@@ -65,7 +65,7 @@ def load_train_data(refresh_train) -> TrainData:
         corr_matrix = train.corr()
         cosine_similarity = pd.DataFrame(
             np.ones((len(ticker_list), len(ticker_list))), index=ticker_list, columns=ticker_list
-        )  # TODO: s3 download the cosine similarity COSINE_SIMILARITY_PATH
+        )  # TODO: s3 download the cosine similarity
 
         train_data = TrainData(
             ticker_list=ticker_list,

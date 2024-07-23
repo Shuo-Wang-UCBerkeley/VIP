@@ -15,15 +15,15 @@ def print_non_zero_weights(tickers, weights):
             print(f"{tickers[i]}: {weights[i]}")
 
 
-def coeff_to_cov(coeff_matrix, standard_deviations):
+def coeff_to_cov(coeff_matrix, vol):
     """
     This function converts the correlation/cosine similarity matrix to a covariance matrix.
     """
     coeff_matrix = np.array(coeff_matrix)
-    standard_deviations = np.array(standard_deviations)
+    vol = np.array(vol)
 
     # Create a diagonal matrix of standard deviations
-    sd_matrix = np.diag(standard_deviations)
+    sd_matrix = np.diag(vol)
 
     # Calculate the covariance matrix
     covariance_matrix = sd_matrix @ coeff_matrix @ sd_matrix
