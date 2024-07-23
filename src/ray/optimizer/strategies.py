@@ -31,17 +31,17 @@ def coeff_to_cov(coeff_matrix, standard_deviations):
     return covariance_matrix
 
 
-def minimum_variance(ret, bounds: list[float] = None, coeff=None):
+def minimum_variance(vol: pd.Series, bounds: list[float], coeff):
     def find_port_variance(weights):
         # this is actually std
-        cov = ret.cov() if coeff is None else coeff_to_cov(coeff, ret.std())
+        cov = coeff_to_cov(coeff, vol)
         port_var = np.sqrt(np.dot(weights.T, np.dot(cov, weights)) * 250)
         return port_var
 
     def weight_cons(weights):
         return np.sum(weights) - 1
 
-    n = len(ret.columns)
+    n = len(vol)
     bounds_to_use = bounds if bounds is not None else [BOUND] * n
     constraint = {"type": "eq", "fun": weight_cons}
 
@@ -56,19 +56,17 @@ def minimum_variance(ret, bounds: list[float] = None, coeff=None):
     return list(optimal["x"])
 
 
-def max_sharpe(ret, bounds=None, corr=None):
+def max_sharpe(mean_ret: pd.Series, vol: pd.Series, bounds, corr):
     def sharpe_func(weights):
-        hist_mean = ret.mean(axis=0).to_frame()
-        hist_cov = ret.cov() if corr is None else coeff_to_cov(corr, ret.std())
-
-        port_ret = np.dot(weights.T, hist_mean.values) * 250
+        hist_cov = coeff_to_cov(corr, vol)
+        port_ret = np.dot(weights.T, mean_ret.values) * 250
         port_std = np.sqrt(np.dot(weights.T, np.dot(hist_cov, weights)) * 250)
         return -1 * port_ret / port_std
 
     def weight_cons(weights):
         return np.sum(weights) - 1
 
-    n = len(ret.columns)
+    n = len(vol)
     bounds_to_use = bounds if bounds is not None else [BOUND] * n
     constraint = {"type": "eq", "fun": weight_cons}
 

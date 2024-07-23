@@ -9,15 +9,15 @@ from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 from redis import asyncio
 
-from src.ray.optimizer.portfolios import optimize_portfolio
-from src.server.data_factory import cache_data
+from src.ray.optimizer.portfolios import optimize_portfolio, portfolio_performance
+from src.server.data_factory import load_data
 from src.server.data_model import Allocations, StockInputs
 
 LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
 # TODO: move this to redis
-_data = cache_data(refresh_train=False, refresh_test=False)
+_train, _test = load_data(refresh_train=False, refresh_test=False)
 
 
 @asynccontextmanager
@@ -62,12 +62,12 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     """
 
     tickers = stocks.get_tickers()
-    missing_tickers = [t for t in tickers if t not in _data.corr_matrix]
+    missing_tickers = [t for t in tickers if t not in _test]
     if len(missing_tickers) > 0:
-        raise ValueError(f"Tickers not found in the correlation matrix: {missing_tickers}")
+        raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-    correlation = _data.corr_matrix.loc[tickers, tickers]
-    allocations = optimize_portfolio(stocks, _data, correlation)
+    port_weight_dict = optimize_portfolio(stocks, _train, _train.corr_matrix)
+    allocations = portfolio_performance(port_weight_dict, _test, tickers)
 
     return allocations
 
@@ -81,13 +81,12 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     """
 
     tickers = stocks.get_tickers()
-    missing_tickers = [t for t in tickers if t not in _data.cosine_similarity]
+    missing_tickers = [t for t in tickers if t not in _test]
     if len(missing_tickers) > 0:
-        raise ValueError(f"Tickers not found in the cosine_similarity matrix: {missing_tickers}")
+        raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-    similarities = _data.cosine_similarity.loc[tickers, tickers]
-
-    allocations = optimize_portfolio(stocks, _data, similarities)
+    port_weight_dict = optimize_portfolio(stocks, _train, _train.cosine_similarity)
+    allocations = portfolio_performance(port_weight_dict, _test, tickers)
 
     return allocations
 
@@ -96,12 +95,12 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
 @cache(expire=60)
 async def refresh_data():
     """
-    refresh the data from the s3 bucket and yahoo finance.
+    refresh the test data from yahoo finance.
     """
-    global _data
-    _data = cache_data(refresh_train=True, refresh_test=True)
+    global _test
+    _, _test = load_data(refresh_train=False, refresh_test=True)
 
-    return {f"message: Data refreshed. Newest test data: {_data.test.index.max()}"}
+    return {f"message: Data refreshed. Newest test data: {_train.test.index.max()}"}
 
 
 @app.get("/health")

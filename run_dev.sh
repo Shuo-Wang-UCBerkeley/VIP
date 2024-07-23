@@ -56,7 +56,8 @@ sleep 15
 minikube tunnel
 # minikube tunnel &
 # TUNNEL_PID=$!
-echo "minikube tunnel started in pid: ${TUNNEL_PID}..."
+echo "minikube tunnel ended..."
+# echo "minikube tunnel started in pid: ${TUNNEL_PID}..."
 # we shouldn't use this b/c port-forward won't really use the load balancer (using multiple pods)
 # kubectl port-forward -n=caopuzheng service/service-prediction 8000:8000
 
@@ -71,20 +72,21 @@ echo "minikube tunnel started in pid: ${TUNNEL_PID}..."
 #     -H "Content-Type: application/json" \
 #     -d '{"houses": [{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322},{"ave_bedrm_num":1.02,"ave_occup":2.6,"ave_room_num":7,"house_age":41,"latitude":37.88,"longitude":-122.23,"med_income":8.3,"population":322}]}'
 
-# output and tail the logs for the api deployment
-# echo
-# echo
-# kubectl logs -n ${NAMESPACE} -l app=${APP_NAME}
+output and tail the logs for the api deployment
+echo
+echo
+kubectl logs -n ${NAMESPACE} -l app=${APP_NAME}
 
-# echo
-# echo
-# echo "Cleaning up..."
-# # kubectl delete namespace ${NAMESPACE} # this will also delete everything in it
+echo
+echo
+echo "Cleaning up..."
+# kubectl delete namespace ${NAMESPACE} # this will also delete everything in it
+kubectl delete -k .k8s/overlays/dev
 # kubectl delete --all deployments,services --namespace ${NAMESPACE}
-# #kubectl delete configmap redis --namespace=caopuzheng
+# kubectl delete configmap redis --namespace=caopuzheng
 
-# echo "stop the minikube tunnel..."
+echo "stop the minikube tunnel..."
 # kill ${TUNNEL_PID}
-# docker image rm ${IMAGE_NAME}
+docker image rm ${IMAGE_NAME}
 # minikube stop
-# echo "The script has finished running properly!"
+echo "The script has finished running properly!"

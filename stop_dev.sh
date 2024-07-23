@@ -27,8 +27,9 @@ echo
 echo
 echo "Cleaning up..."
 # kubectl delete namespace ${NAMESPACE} # this will also delete everything in it
-kubectl delete --all deployments,services --namespace ${NAMESPACE}
-#kubectl delete configmap redis --namespace=caopuzheng
+kubectl delete -k .k8s/overlays/dev
+# kubectl delete --all deployments,services --namespace ${NAMESPACE}
+# kubectl delete configmap redis --namespace=caopuzheng
 
 echo "stop the minikube tunnel..."
 # kill ${TUNNEL_PID}

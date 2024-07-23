@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from src.ray.optimizer.strategies import max_sharpe, minimum_variance
-from src.server.data_factory import CacheData
+from src.server.data_factory import TrainData
 from src.server.data_model import Allocations, PortfolioSummary, StockInputs
 
 
@@ -27,41 +27,43 @@ def portfolio_sharpe(ret, std):
     return ret / std
 
 
-def optimize_portfolio(stocks: StockInputs, data: CacheData, coefficients: pd.DataFrame):
+def optimize_portfolio(stocks: StockInputs, train_data: TrainData, coefficients: pd.DataFrame):
     # data extraction from CacheData and StockInputs
     tickers = stocks.get_tickers()
-    train = data.train[tickers]
-    test = data.test[tickers]
-    index = data.test["SPY"]
+    mean_return = train_data.mean_return[tickers]
+    volatilities = train_data.volatilities[tickers]
+    coeff = coefficients.loc[tickers, tickers]
 
     # decide the allocation strategy based on the risk tolerance
     if stocks.risk_tolerance == "low":
-        weights = minimum_variance(train, stocks.get_bounds(), coeff=coefficients)
+        weights = minimum_variance(volatilities, stocks.get_bounds(), coeff=coeff)
     elif stocks.risk_tolerance == "high":
-        weights = max_sharpe(train, stocks.get_bounds(), corr=coefficients)
+        weights = max_sharpe(mean_return, volatilities, stocks.get_bounds(), corr=coeff)
     elif stocks.risk_tolerance == "moderate":
-        weight_1 = minimum_variance(train, stocks.get_bounds(), coeff=coefficients)
-        weight_2 = max_sharpe(train, stocks.get_bounds(), corr=coefficients)
+        weight_1 = minimum_variance(volatilities, stocks.get_bounds(), coeff=coeff)
+        weight_2 = max_sharpe(mean_return, volatilities, stocks.get_bounds(), corr=coeff)
         # take the average from these two list of weights
         weights = [(w1 + w2) / 2 for w1, w2 in zip(weight_1, weight_2)]
 
-    # use the weights to calculate the portfolio performance
     port_weight_dict = {}
     port_weight_dict["recommendation"] = weights
 
-    summeries = portfolio_performance(port_weight_dict, test, index)
-    ticker_weights = {t: w for t, w in zip(tickers, weights)}
-
-    return Allocations(ticker_weights=ticker_weights, summaries=summeries)
+    return port_weight_dict
 
 
-def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index: pd.Series, verbose: bool = False):
+def portfolio_performance(
+    port_weight_dict: dict, testData: pd.DataFrame, tickers: list[str], verbose: bool = False
+) -> Allocations:
 
-    return_list = []
+    # use the weights to calculate the portfolio performance
 
-    portfolio_dict = {k: portfolio_return(v, return_df) for k, v in port_weight_dict.items()}
+    test = testData[tickers]
+    index = testData["SPY"]
+
+    portfolio_dict = {k: portfolio_return(v, test) for k, v in port_weight_dict.items()}
     portfolio_dict["Index"] = index
 
+    summaries = []
     for name, ret_series in portfolio_dict.items():
 
         annulized_return = ret_series.mean() * 250 * 100
@@ -75,7 +77,7 @@ def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index
             volatility=annulized_vol,
             sharpe_ratio=annulized_return / annulized_vol,
         )
-        return_list.append(ps)
+        summaries.append(ps)
 
         if verbose:
             print(f"---------- {name} ----------")
@@ -89,4 +91,6 @@ def portfolio_performance(port_weight_dict: dict, return_df: pd.DataFrame, index
 
             print()
 
-    return return_list
+    ticker_weights = {t: w for t, w in zip(tickers, port_weight_dict["recommendation"])}
+
+    return Allocations(ticker_weights=ticker_weights, summaries=summaries)

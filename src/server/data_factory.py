@@ -1,80 +1,97 @@
+import pickle
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
 
-from ray.utils.file_utilities import data_dir, s3_download
+from src.ray.utils.file_utilities import data_dir, s3_download
 
-TRAIN_S3_PATH = "CRSP/crsp_2018-2023_clean_3.parquet"
+train_s3_path = "CRSP/crsp_2018-2023_clean_3.parquet"
+train_file_name = train_s3_path.split("/")[1]
+TRAIN_PATH = data_dir.joinpath(train_file_name).absolute()
 
 # local storage path
-TRAIN_FILE_NAME = TRAIN_S3_PATH.split("/")[1]
-TRAIN_PATH = data_dir.joinpath(TRAIN_FILE_NAME).absolute()
-TICKER_LIST_PATH = data_dir.joinpath("ticker_list.pkl")
-CORR_PATH = data_dir.joinpath("corr_matrix.pkl")
-COSINE_SIMILARITY_PATH = data_dir.joinpath("cosine_similarity.pkl")
-
-TEST_PATH = data_dir.joinpath("test.parquet").absolute()
+APP_DATA_DIR = Path(__file__).joinpath("../data").resolve()
+TRAIN_DATA_PATH = APP_DATA_DIR.joinpath("train_data.pickle").absolute()
+TEST_PATH = APP_DATA_DIR.joinpath("test.parquet").absolute()
 
 
 @dataclass
-class CacheData:
-    train: pd.DataFrame
-    test: pd.DataFrame
+class TrainData:
+    ticker_list: list[str]
+
+    volatilities: pd.Series
+    mean_return: pd.Series
+
     corr_matrix: pd.DataFrame
     cosine_similarity: pd.DataFrame
 
 
-def cache_data(refresh_train=False, refresh_test=False):
-    train, test = load_data(refresh_train, refresh_test)
-    corr_matrix = load_corr_matrix()
-    cosine_similarity = load_cosine_similarity()
+def load_data(refresh_train=False, refresh_test=False) -> tuple[TrainData, pd.DataFrame]:
 
-    # Create an instance of CacheData and populate it
-    cache_data = CacheData(train=train, test=test, corr_matrix=corr_matrix, cosine_similarity=cosine_similarity)
+    train = load_train_data(refresh_train)
+    test = load_test_data(ticker_list=train.ticker_list, refresh_test=refresh_test)
 
-    return cache_data
+    return train, test
 
 
-def load_data(refresh_train=False, refresh_test=True):
+def load_train_data(refresh_train) -> TrainData:
     """
     This function downloads the train data from s3, and live test data from yahoo finance.
     """
 
-    if not data_dir.exists():
-        print(f"Creating data directory in {data_dir}...")
-        data_dir.mkdir()
+    if refresh_train or not TRAIN_DATA_PATH.exists():
+        if not APP_DATA_DIR.exists():
+            print(f"Creating data directory in {APP_DATA_DIR}...")
+            APP_DATA_DIR.mkdir()
 
-    # cache the training return into memory
+        print(f"Downloading training data from s3 {train_s3_path}...")
+        s3_download(train_s3_path)
 
-    if refresh_train or not TRAIN_PATH.exists():
-        print(f"Downloading training data from s3 {TRAIN_S3_PATH}...")
-        s3_download(TRAIN_S3_PATH)
+        train_df = pd.read_parquet(TRAIN_PATH)
+        train = train_df.pivot(index="date", columns="ticker", values="return")
 
-    # TODO: don't need to load train data if it's not refreshed
-    train_df = pd.read_parquet(TRAIN_PATH)
-    train = train_df.pivot(index="date", columns="ticker", values="return")
+        if train.isnull().sum().sum() > 0:
+            # print(train.isnull().sum())
+            train = train[train.columns[train.isnull().sum() == 0]]
+        print(f"Train data shape: {train.shape}, from {train.index.min()} to {train.index.max()}")
 
-    if train.isnull().sum().sum() > 0:
-        # print(train.isnull().sum())
-        train = train[train.columns[train.isnull().sum() == 0]]
+        ticker_list = train.columns.tolist()
+        mean_return = train.mean(axis=0).reindex()
+        volatilities = train.std().reindex()
 
-    # write the ticker list to a file
-    ticker_list = train.columns.tolist()
-    pd.to_pickle(ticker_list, TICKER_LIST_PATH)
+        corr_matrix = train.corr()
+        cosine_similarity = pd.DataFrame(
+            np.ones((len(ticker_list), len(ticker_list))), index=ticker_list, columns=ticker_list
+        )  # TODO: s3 download the cosine similarity COSINE_SIMILARITY_PATH
 
-    corr_matrix = train.corr()
-    pd.to_pickle(corr_matrix, CORR_PATH)
+        train_data = TrainData(
+            ticker_list=ticker_list,
+            mean_return=mean_return,
+            volatilities=volatilities,
+            corr_matrix=corr_matrix,
+            cosine_similarity=cosine_similarity,
+        )
 
-    # TODO: s3 download the cosine similarity COSINE_SIMILARITY_PATH
+        # put train_data into pickle file for future use
+        with open(TRAIN_DATA_PATH, "wb") as f:
+            pickle.dump(train_data, f)
+    else:
+        with open(TRAIN_DATA_PATH, "rb") as f:
+            train_data = pickle.load(f)
 
-    print(f"Train data shape: {train.shape}, from {train.index.min()} to {train.index.max()}")
+    return train_data
 
-    # load the test return data (2024-01-02 till today)
+
+def load_test_data(ticker_list: list[str], refresh_test) -> pd.DataFrame:
+    """
+    load the test return data (2024-01-02 till today)
+    """
 
     if refresh_test or not TEST_PATH.exists():
-        print("Downloading test data from Yahoo Finance...")
+        print("Refreshing test data from Yahoo Finance...")
         test_tickers = ticker_list + ["SPY"]
         test_df = yf.download(test_tickers, start="2023-12-29")
         test_close = pd.DataFrame(test_df["Adj Close"])
@@ -96,28 +113,6 @@ def load_data(refresh_train=False, refresh_test=True):
         test.to_parquet(TEST_PATH)
     else:
         test = pd.read_parquet(TEST_PATH)
+
     print(f"Test data shape: {test.shape}, from {test.index.min()} to {test.index.max()}")
-
-    return train, test
-
-
-def load_corr_matrix():
-    """
-    This function downloads the correlation matrix from local disk.
-    """
-    corr_matrix = pd.read_pickle(CORR_PATH)
-
-    return corr_matrix
-
-
-def load_cosine_similarity():
-    """
-    This function downloads the embeddings from s3 and return them as a dataframe, with the cosine similarity.
-    """
-
-    cosine_similarity = pd.read_pickle(CORR_PATH)
-    # TODO: load similarity instead of correlation
-    # cosine_similarity = pd.read_pickle(COSINE_SIMILARITY_PATH)
-    cosine_similarity.loc[:, :] = 0  # assume all is 0 for now
-
-    return cosine_similarity
+    return test

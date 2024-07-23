@@ -48,6 +48,8 @@ ENV PATH=${APP_DIR}/venv/bin:${PATH}
 
 # copy over the current directory (our current code) to the app directory
 COPY . .
+# delete the data directory, as it is not needed in the image
+RUN rm -rf ./data
 
 CMD ["uvicorn", "src.server.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
