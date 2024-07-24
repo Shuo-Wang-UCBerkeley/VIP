@@ -12,6 +12,7 @@ poetry.lock
 .DS_Store
 dump.rdb
 temp/
+patch-deployment-server.yaml
 
 # C extensions
 *.so

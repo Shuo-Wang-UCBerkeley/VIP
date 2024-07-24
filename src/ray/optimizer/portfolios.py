@@ -77,11 +77,11 @@ def portfolio_performance(
             print(f"---------- {name} ----------")
             # print("Weights:", equally_weighted_weights)
             print(
-                f"Annualized Return: {annulized_return:.2}",
+                f"Annualized Return: {annulized_return:.2f}",
             )
-            print(f"Volatility: {annulized_vol: .2}")
-            print(f"Sharpe Ratio: {annulized_return / annulized_vol: .2f}")
-            print(f"Total Return: {total_return: .2}")
+            print(f"Volatility: {annulized_vol:.2f}")
+            print(f"Sharpe Ratio: {annulized_return / annulized_vol:.2f}")
+            print(f"Total Return: {total_return:.2f}")
 
             print()
     return summaries

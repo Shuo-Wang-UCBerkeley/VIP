@@ -45,6 +45,9 @@ kubectl config use-context w255-aks
 
 kustomize build .k8s/overlays/prod -o ./temp/prod/
 kubectl apply -k .k8s/overlays/prod
+
+echo
+sleep 5
 kubectl wait --for=jsonpath='{.status.phase}'=Active namespace/${NAMESPACE}
 
 # use kubectl to check if this exists
@@ -60,8 +63,7 @@ curl -o /dev/null -s -w "%{http_code}\n" -X GET "$URI/docs"
 
 echo
 echo "testing '/baseline_allocate' endpoint, expecting 200..."
-curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
-  "$URI/baseline_allocate" \
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/baseline_allocate" \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -71,8 +73,7 @@ curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
 
 echo
 echo "testing '/ml_allocate_cosine_similarity' endpoint, expecting 200..."
-curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
-  "$URI/ml_allocate_cosine_similarity" \
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/ml_allocate_cosine_similarity" \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

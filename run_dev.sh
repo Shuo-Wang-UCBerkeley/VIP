@@ -2,7 +2,7 @@ APP_NAME=server
 IMAGE_NAME=server_arm64
 NAMESPACE=caopuzheng
 URI="http://localhost:8000"
-SHUT_DOWN_MINIKUBE=0
+SHUT_DOWN_MINIKUBE=1
 
 # change the directory to the current directory
 echo "changing directory to current script directory..."
@@ -67,8 +67,7 @@ curl -o /dev/null -s -w "%{http_code}\n" -X GET "$URI/docs"
 
 echo
 echo "testing '/baseline_allocate' endpoint, expecting 200..."
-curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
-    "$URI/baseline_allocate" \
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/baseline_allocate" \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -78,8 +77,7 @@ curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
 
 echo
 echo "testing '/ml_allocate_cosine_similarity' endpoint, expecting 200..."
-curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' \
-    "$URI/ml_allocate_cosine_similarity" \
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/ml_allocate_cosine_similarity" \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
@@ -104,7 +102,7 @@ kubectl delete -k .k8s/overlays/dev
 # kubectl delete configmap redis --namespace=caopuzheng
 
 echo "stop the minikube tunnel..."
-# kill ${TUNNEL_PID}
+kill ${TUNNEL_PID}
 docker image rm ${IMAGE_NAME}
 if [ $SHUT_DOWN_MINIKUBE -eq 1 ]; then
     minikube stop

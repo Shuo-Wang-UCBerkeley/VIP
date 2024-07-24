@@ -13,7 +13,7 @@ train_file_name = train_s3_path.split("/")[1]
 TRAIN_PATH = data_dir.joinpath(train_file_name).absolute()
 
 # local storage path
-APP_DATA_DIR = Path(__file__).joinpath("../data").resolve()
+APP_DATA_DIR = Path(__file__).joinpath("../server_data").resolve()
 TRAIN_DATA_PATH = APP_DATA_DIR.joinpath("train_data.pickle").absolute()
 TEST_PATH = APP_DATA_DIR.joinpath("test.parquet").absolute()
 

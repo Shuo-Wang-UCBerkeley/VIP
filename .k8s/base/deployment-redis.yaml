@@ -54,3 +54,10 @@ spec:
               subPath: redis.conf
             - name: redis-config-map
               mountPath: /mnt/config-map/
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 200m
+              memory: 200Mi

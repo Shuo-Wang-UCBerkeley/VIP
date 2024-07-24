@@ -41,6 +41,13 @@ spec:
               "-c",
               "until nc -vz redis 6379; do echo 'waiting for redis service from DNS'; sleep 2; done",
             ]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 200m
+              memory: 200Mi
         - name: init-verify-redis-ready
           image: busybox:1.28
           command:
@@ -49,6 +56,13 @@ spec:
               "-c",
               "until (printf 'PING\r\n';) | nc redis 6379; do echo 'waiting for redis to PONG'; sleep 1; done",
             ]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 200m
+              memory: 200Mi
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
