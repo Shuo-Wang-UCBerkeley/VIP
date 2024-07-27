@@ -9,8 +9,10 @@ import yfinance as yf
 from src.ray.utils.file_utilities import data_dir, s3_download
 
 train_s3_path = "CRSP/crsp_2018-2023_clean_3.parquet"
-train_file_name = train_s3_path.split("/")[1]
-TRAIN_PATH = data_dir.joinpath(train_file_name).absolute()
+TRAIN_PATH = data_dir.joinpath(train_s3_path.split("/")[1]).absolute()
+
+cosine_similarity_s3_path = "CRSP/crsp_rachel_results_500.pkl"
+TRAINING_OUTPUT_PATH = data_dir.joinpath(cosine_similarity_s3_path.split("/")[1]).absolute()
 
 # local storage path
 APP_DATA_DIR = Path(__file__).joinpath("../server_data").resolve()
@@ -29,7 +31,7 @@ class TrainData:
     cosine_similarity: pd.DataFrame
 
 
-def load_data(refresh_train=False, refresh_test=False) -> tuple[TrainData, pd.DataFrame]:
+def load_data(refresh_train, refresh_test) -> tuple[TrainData, pd.DataFrame]:
 
     train_data = load_train_data(refresh_train)
     test = load_test_data(ticker_list=train_data.ticker_list, refresh_test=refresh_test)
@@ -49,23 +51,37 @@ def load_train_data(refresh_train) -> TrainData:
 
         print(f"Downloading training data from s3 {train_s3_path}...")
         s3_download(train_s3_path)
+        s3_download(cosine_similarity_s3_path)
 
+        results = pd.read_pickle(TRAINING_OUTPUT_PATH)
+        permno_list = results["permno_id"]
+        # get the mapping from permno_id to ticker
         train_df = pd.read_parquet(TRAIN_PATH)
-        train = train_df.pivot(index="date", columns="ticker", values="return")
+        train_df = train_df[train_df["permno_id"].isin(permno_list)]
+        permno_to_tickers = (
+            train_df[["permno_id", "ticker"]].drop_duplicates().drop_duplicates(subset="permno_id")
+        )  # keep only 1 ticker per permno_id
 
+        # get the same order of tickers based on permno_list
+        tickers = permno_to_tickers.set_index("permno_id").loc[permno_list, "ticker"].tolist()
+        cosine_similarity = pd.DataFrame(results["cosine"], index=tickers, columns=tickers)
+        train_df = train_df[train_df["ticker"].isin(tickers)]
+
+        # calculate the other data based on the filtered permno_list
+        train = train_df.pivot(index="date", columns="ticker", values="return")
         if train.isnull().sum().sum() > 0:
-            # print(train.isnull().sum())
+            # drop any ticker with incomplete data for the full period
             train = train[train.columns[train.isnull().sum() == 0]]
+            cosine_similarity = cosine_similarity.loc[train.columns, train.columns]
+
         print(f"Train data shape: {train.shape}, from {train.index.min()} to {train.index.max()}")
 
         ticker_list = train.columns.tolist()
         mean_return = train.mean(axis=0).reindex()
         volatilities = train.std().reindex()
-
         corr_matrix = train.corr()
-        cosine_similarity = pd.DataFrame(
-            np.ones((len(ticker_list), len(ticker_list))), index=ticker_list, columns=ticker_list
-        )  # TODO: s3 download the cosine similarity
+
+        assert cosine_similarity.columns.tolist() == ticker_list
 
         train_data = TrainData(
             ticker_list=ticker_list,
