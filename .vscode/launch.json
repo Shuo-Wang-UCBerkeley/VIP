@@ -23,6 +23,9 @@
                 "8888",
                 "--reload"
             ],
+            "env": {
+                "REFRESH_TRAIN": "True"
+            },
             "cwd": "${workspaceFolder}/src",
             "justMyCode": false,
             "module": "uvicorn",

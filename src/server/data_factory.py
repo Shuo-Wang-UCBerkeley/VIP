@@ -6,18 +6,19 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-from src.ray.utils.file_utilities import data_dir, s3_download
+from src.ray.utils.file_utilities import data_dir, s3_download, s3_upload
 
 train_s3_path = "CRSP/crsp_2018-2023_clean_3.parquet"
 TRAIN_PATH = data_dir.joinpath(train_s3_path.split("/")[1]).absolute()
 
 cosine_similarity_s3_path = "CRSP/crsp_rachel_results_500.pkl"
 TRAINING_OUTPUT_PATH = data_dir.joinpath(cosine_similarity_s3_path.split("/")[1]).absolute()
+TRAIN_DF_PATH = data_dir.joinpath("train.parquet").absolute()
 
 # local storage path
 APP_DATA_DIR = Path(__file__).joinpath("../server_data").resolve()
 TRAIN_DATA_PATH = APP_DATA_DIR.joinpath("train_data.pickle").absolute()
-TEST_PATH = APP_DATA_DIR.joinpath("test.parquet").absolute()
+TEST_DF_PATH = APP_DATA_DIR.joinpath("test.parquet").absolute()
 
 
 @dataclass
@@ -91,6 +92,9 @@ def load_train_data(refresh_train) -> TrainData:
             cosine_similarity=cosine_similarity,
         )
 
+        train.to_parquet(TRAIN_DF_PATH)
+        s3_upload("CRSP/train.parquet", TRAIN_DF_PATH)
+
         # put train_data into pickle file for future use
         with open(TRAIN_DATA_PATH, "wb") as f:
             pickle.dump(train_data, f)
@@ -106,7 +110,7 @@ def load_test_data(ticker_list: list[str], refresh_test) -> pd.DataFrame:
     load the test return data (2024-01-02 till today)
     """
 
-    if refresh_test or not TEST_PATH.exists():
+    if refresh_test or not TEST_DF_PATH.exists():
         print("Refreshing test data from Yahoo Finance...")
         test_tickers = ticker_list + ["SPY"]
         test_df = yf.download(test_tickers, start="2023-12-29")
@@ -126,9 +130,12 @@ def load_test_data(ticker_list: list[str], refresh_test) -> pd.DataFrame:
         if test.isnull().sum().sum() > 0:
             print(f"still has null but filling with NaN: {test.isnull().sum()}")
             test = test.fillna(0)
-        test.to_parquet(TEST_PATH)
+
+        test.to_parquet(TEST_DF_PATH)
+        s3_upload("CRSP/test.parquet", TEST_DF_PATH)
+
     else:
-        test = pd.read_parquet(TEST_PATH)
+        test = pd.read_parquet(TEST_DF_PATH)
 
     print(f"Test data shape: {test.shape}, from {test.index.min()} to {test.index.max()}")
     return test
