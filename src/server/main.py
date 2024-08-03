@@ -43,16 +43,6 @@ app = FastAPI(
 )
 
 
-# app = FastAPI()
-
-# @app.on_event("startup")
-# async def startup():
-#     HOST_URL = os.environ.get("REDIS_URL", LOCAL_REDIS_URL)
-#     logger.info(f"Connecting to: {HOST_URL}")
-#     redis = asyncio.from_url(HOST_URL)
-#     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-
-
 @app.post("/baseline_allocate")
 @cache(expire=60)
 async def baseline_allocate(stocks: StockInputs) -> Allocations:
@@ -61,15 +51,8 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     Return is cached for 60 seconds.
     """
 
-    tickers = stocks.get_tickers()
-    missing_tickers = [t for t in tickers if t not in _test]
-    if len(missing_tickers) > 0:
-        raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
-
-    ticker_weights = optimize_portfolio(stocks, _td, _td.coeff_dict["baseline"])
-    summaries = portfolio_performance(ticker_weights, _test)
-
-    return Allocations(ticker_weights=ticker_weights, summaries=summaries)
+    coeff_name = "baseline"
+    return allocate(stocks, coeff_name)
 
 
 @app.post("/ml_allocate_cosine_similarity")
@@ -80,15 +63,8 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     Return is cached for 60 seconds.
     """
 
-    tickers = stocks.get_tickers()
-    missing_tickers = [t for t in tickers if t not in _test]
-    if len(missing_tickers) > 0:
-        raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
-
-    ticker_weights = optimize_portfolio(stocks, _td, _td.coeff_dict["ml_baseline"])
-    summaries = portfolio_performance(ticker_weights, _test)
-
-    return Allocations(ticker_weights=ticker_weights, summaries=summaries)
+    coeff_name = "ml_baseline"
+    return allocate(stocks, coeff_name)
 
 
 @app.get("/refresh_data")
@@ -111,28 +87,20 @@ async def health():
     return {"time": datetime.now().isoformat()}
 
 
-# @app.post("/ml_allocate_embeddings")
-# @cache(expire=60)
-# async def ml_allocate_embeddings(stocks: StockInputs) -> Allocations:
-#     """
-#     Calibrates the allocation weights using ml-generated embeddings.
-#     Return is cached for 60 seconds.
-#     """
+def allocate(stocks: StockInputs, coeff_name: str) -> Allocations:
+    """
+    Calibrates the allocation weights using the statistical methods.
+    """
 
-#     weights = {h.ticker: 1 / len(stocks.stockList) for h in stocks.stockList}
-#     summeries = [
-#         PortfolioSummary(
-#             name="baseline",
-#             return_mean=0.1,
-#             return_std=0.2,
-#             sharpe_ratio=0.5,
-#         ),
-#         PortfolioSummary(
-#             name="index",
-#             return_mean=0.2,
-#             return_std=0.4,
-#             sharpe_ratio=0.5,
-#         ),
-#     ]
+    tickers = stocks.get_tickers()
+    missing_tickers = [t for t in tickers if t not in _test]
+    if len(missing_tickers) > 0:
+        raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-#     return Allocations(weights=weights, summaries=summeries)
+    if coeff_name not in _td.coeff_dict:
+        raise ValueError(f"Invalid coefficient name: {coeff_name}")
+
+    ticker_weights = optimize_portfolio(stocks, _td, _td.coeff_dict[coeff_name])
+    summaries = portfolio_performance(ticker_weights, _test)
+
+    return Allocations(ticker_weights=ticker_weights, summaries=summaries)
