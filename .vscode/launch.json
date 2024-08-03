@@ -24,7 +24,7 @@
                 "--reload"
             ],
             "env": {
-                "REFRESH_TRAIN": "False"
+                "REFRESH_TRAIN": "True"
             },
             "cwd": "${workspaceFolder}/src",
             "justMyCode": false,
