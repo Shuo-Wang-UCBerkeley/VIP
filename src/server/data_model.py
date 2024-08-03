@@ -104,6 +104,17 @@ class StockInputs(BaseModel):
             "examples": [
                 {
                     "stockList": [
+                        {"ticker": "ABBV"},
+                        {"ticker": "AAPL"},
+                        {"ticker": "ORCL"},
+                        {"ticker": "MSFT"},
+                        {"ticker": "GOOG"},
+                        {"ticker": "GM"},
+                    ],
+                    "risk_tolerance": "low",
+                },
+                {
+                    "stockList": [
                         {
                             # range of weights
                             "ticker": "AAPL",
@@ -127,7 +138,7 @@ class StockInputs(BaseModel):
                         },
                     ],
                     "risk_tolerance": "moderate",
-                }
+                },
             ]
         },
     )

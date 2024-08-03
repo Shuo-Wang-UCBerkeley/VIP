@@ -9,10 +9,16 @@ import yfinance as yf
 from src.ray.utils.file_utilities import data_dir, s3_download, s3_upload
 
 train_s3_path = "CRSP/crsp_2018-2023_clean_3.parquet"
-TRAIN_PATH = data_dir.joinpath(train_s3_path.split("/")[1]).absolute()
 
-cosine_similarity_s3_path = "CRSP/crsp_rachel_results_500.pkl"
-TRAINING_OUTPUT_PATH = data_dir.joinpath(cosine_similarity_s3_path.split("/")[1]).absolute()
+# ml baseline cosine similarity
+ml_baseline_cos_s3_path = "CRSP/crsp_rachel_results_500.pkl"
+
+# ml dynamic cosine similarity
+ml_dynamic_cos_s3_path_dict = {
+    "ml_input_weight": "CRSP/cosine_sim_matrix_input_embedding_weights_100stocks_batchsize96_1feature11targets_1.csv",
+    "ml_ave_output": "CRSP/cosine_sim_matrix_ave_output_embedding_100stocks_batchsize96_1feature11targets_1.csv",
+    "ml_last_output": "CRSP/cosine_sim_matrix_last_output_embedding_100stocks_batchsize96_1feature11targets_1.csv",
+}
 
 TRAIN_DF_PATH = data_dir.joinpath("train.parquet").absolute()
 
@@ -20,6 +26,10 @@ TRAIN_DF_PATH = data_dir.joinpath("train.parquet").absolute()
 APP_DATA_DIR = Path(__file__).joinpath("../server_data").resolve()
 TRAIN_DATA_PATH = APP_DATA_DIR.joinpath("train_data.pickle").absolute()
 TEST_DF_PATH = APP_DATA_DIR.joinpath("test.parquet").absolute()
+
+
+def get_local_path(s3_path: str) -> Path:
+    return data_dir.joinpath(s3_path.split("/")[1]).absolute()
 
 
 @dataclass
@@ -65,20 +75,23 @@ def load_train_data(refresh_train) -> TrainData:
 
         print(f"Downloading training outputs from s3 {train_s3_path}...")
         # s3_download(train_s3_path)
-        s3_download(cosine_similarity_s3_path)
+        s3_download(ml_baseline_cos_s3_path)
 
         # ml baseline cosine similarity
-        results = pd.read_pickle(TRAINING_OUTPUT_PATH)
+        results = pd.read_pickle(get_local_path(ml_baseline_cos_s3_path))
         permno_list = results["permno_id"]
         # get the mapping from permno_id to ticker
-        train_df = pd.read_parquet(TRAIN_PATH)
+        train_df = pd.read_parquet(get_local_path(train_s3_path))
         train_df = train_df[train_df["permno_id"].isin(permno_list)]
         permno_to_tickers = (
-            train_df[["permno_id", "ticker"]].drop_duplicates().drop_duplicates(subset="permno_id")
+            train_df[["permno_id", "ticker"]]
+            .drop_duplicates()
+            .drop_duplicates(subset="permno_id")
+            .set_index("permno_id")
         )  # keep only 1 ticker per permno_id
 
         # get the same order of tickers based on permno_list
-        tickers = permno_to_tickers.set_index("permno_id").loc[permno_list, "ticker"].tolist()
+        tickers = permno_to_tickers.loc[permno_list, "ticker"].tolist()
         ml_baseline_cos = pd.DataFrame(results["cosine"], index=tickers, columns=tickers)
         train_df = train_df[train_df["ticker"].isin(tickers)]
 
@@ -95,10 +108,33 @@ def load_train_data(refresh_train) -> TrainData:
         mean_return = train.mean(axis=0).reindex()
         volatilities = train.std().reindex()
         corr_matrix = train.corr()
+
         coeff_dict = {
             "baseline": corr_matrix,
             "ml_baseline": ml_baseline_cos,
         }
+
+        # load the ml dynamic cosine similarity
+        for name, s3_path in ml_dynamic_cos_s3_path_dict.items():
+            s3_download(s3_path)
+            ml_dynamic_cos = pd.read_csv(get_local_path(s3_path), index_col=0)
+
+            # filter the cosine similarity matrix based on the permno_list
+            ml_tickers = permno_to_tickers.loc[[str(x) for x in ml_dynamic_cos.index.to_list()]]["ticker"].tolist()
+            ml_dynamic_cos.index = ml_tickers
+            ml_dynamic_cos.columns = ml_tickers
+            coeff_dict[name] = ml_dynamic_cos
+
+            output_tickers = [
+                "ABBV",
+                "AAPL",
+                "ORCL",
+                "MSFT",
+                "FB",
+                "GOOG",
+                "GM",
+            ]
+            ml_dynamic_cos.loc[output_tickers, output_tickers].to_csv(name + ".csv")
 
         assert ml_baseline_cos.columns.tolist() == ticker_list
 

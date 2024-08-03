@@ -13,9 +13,7 @@ spec:
         - uri:
             exact: /baseline_allocate
         - uri:
-            exact: /ml_allocate_embeddings
-        - uri:
-            exact: /ml_allocate_cosine_similarity    
+            prefix: /ml_allocate
         - uri:
             prefix: /refresh_data
         - uri:

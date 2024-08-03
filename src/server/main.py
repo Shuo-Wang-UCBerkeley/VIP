@@ -67,6 +67,30 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     return allocate(stocks, coeff_name)
 
 
+@app.post("/ml_allocate_dynamic_avg")
+@cache(expire=60)
+async def ml_allocate_dynamic_avg(stocks: StockInputs) -> Allocations:
+    """
+    Calibrates the allocation weights using ml-generated cosine similarity.
+    Return is cached for 60 seconds.
+    """
+
+    coeff_name = "ml_ave_output"
+    return allocate(stocks, coeff_name)
+
+
+@app.post("/ml_allocate_dynamic_last")
+@cache(expire=60)
+async def ml_allocate_dynamic_last(stocks: StockInputs) -> Allocations:
+    """
+    Calibrates the allocation weights using ml-generated cosine similarity.
+    Return is cached for 60 seconds.
+    """
+
+    coeff_name = "ml_last_output"
+    return allocate(stocks, coeff_name)
+
+
 @app.get("/refresh_data")
 @cache(expire=60)
 async def refresh_data():
