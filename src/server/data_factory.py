@@ -13,6 +13,7 @@ TRAIN_PATH = data_dir.joinpath(train_s3_path.split("/")[1]).absolute()
 
 cosine_similarity_s3_path = "CRSP/crsp_rachel_results_500.pkl"
 TRAINING_OUTPUT_PATH = data_dir.joinpath(cosine_similarity_s3_path.split("/")[1]).absolute()
+
 TRAIN_DF_PATH = data_dir.joinpath("train.parquet").absolute()
 
 # local storage path
@@ -28,16 +29,28 @@ class TrainData:
     volatilities: pd.Series
     mean_return: pd.Series
 
-    corr_matrix: pd.DataFrame
-    cosine_similarity: pd.DataFrame
+    coeff_dict: dict[str, pd.DataFrame]
+    """
+    key: name of the coefficient matrix
+    """
+
+    # supporting work
+    permno_to_tickers: pd.DataFrame
 
 
 def load_data(refresh_train, refresh_test) -> tuple[TrainData, pd.DataFrame]:
 
-    train_data = load_train_data(refresh_train)
-    test = load_test_data(ticker_list=train_data.ticker_list, refresh_test=refresh_test)
+    td = load_train_data(refresh_train)
+    test = load_test_data(ticker_list=td.ticker_list, refresh_test=refresh_test)
 
-    return train_data, test
+    if refresh_train:
+        test_tickers = test.columns.tolist()
+        test_permno = td.permno_to_tickers[td.permno_to_tickers["ticker"].isin(test_tickers)].index.tolist()
+        with open("test_permno.txt", "w") as file:
+            for item in test_permno:
+                file.write(f"{item}\n")
+
+    return td, test
 
 
 def load_train_data(refresh_train) -> TrainData:
@@ -50,10 +63,11 @@ def load_train_data(refresh_train) -> TrainData:
             print(f"Creating data directory in {APP_DATA_DIR}...")
             APP_DATA_DIR.mkdir()
 
-        print(f"Downloading training data from s3 {train_s3_path}...")
-        s3_download(train_s3_path)
+        print(f"Downloading training outputs from s3 {train_s3_path}...")
+        # s3_download(train_s3_path)
         s3_download(cosine_similarity_s3_path)
 
+        # ml baseline cosine similarity
         results = pd.read_pickle(TRAINING_OUTPUT_PATH)
         permno_list = results["permno_id"]
         # get the mapping from permno_id to ticker
@@ -65,7 +79,7 @@ def load_train_data(refresh_train) -> TrainData:
 
         # get the same order of tickers based on permno_list
         tickers = permno_to_tickers.set_index("permno_id").loc[permno_list, "ticker"].tolist()
-        cosine_similarity = pd.DataFrame(results["cosine"], index=tickers, columns=tickers)
+        ml_baseline_cos = pd.DataFrame(results["cosine"], index=tickers, columns=tickers)
         train_df = train_df[train_df["ticker"].isin(tickers)]
 
         # calculate the other data based on the filtered permno_list
@@ -73,7 +87,7 @@ def load_train_data(refresh_train) -> TrainData:
         if train.isnull().sum().sum() > 0:
             # drop any ticker with incomplete data for the full period
             train = train[train.columns[train.isnull().sum() == 0]]
-            cosine_similarity = cosine_similarity.loc[train.columns, train.columns]
+            ml_baseline_cos = ml_baseline_cos.loc[train.columns, train.columns]
 
         print(f"Train data shape: {train.shape}, from {train.index.min()} to {train.index.max()}")
 
@@ -81,15 +95,19 @@ def load_train_data(refresh_train) -> TrainData:
         mean_return = train.mean(axis=0).reindex()
         volatilities = train.std().reindex()
         corr_matrix = train.corr()
+        coeff_dict = {
+            "baseline": corr_matrix,
+            "ml_baseline": ml_baseline_cos,
+        }
 
-        assert cosine_similarity.columns.tolist() == ticker_list
+        assert ml_baseline_cos.columns.tolist() == ticker_list
 
         train_data = TrainData(
             ticker_list=ticker_list,
             mean_return=mean_return,
             volatilities=volatilities,
-            corr_matrix=corr_matrix,
-            cosine_similarity=cosine_similarity,
+            coeff_dict=coeff_dict,
+            permno_to_tickers=permno_to_tickers,
         )
 
         train.to_parquet(TRAIN_DF_PATH)

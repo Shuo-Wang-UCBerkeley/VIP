@@ -17,7 +17,7 @@ LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
 REFRESH_TRAIN = os.environ.get("REFRESH_TRAIN") == "True"
-_train, _test = load_data(refresh_train=REFRESH_TRAIN, refresh_test=REFRESH_TRAIN)
+_td, _test = load_data(refresh_train=REFRESH_TRAIN, refresh_test=REFRESH_TRAIN)
 
 
 @asynccontextmanager
@@ -66,7 +66,7 @@ async def baseline_allocate(stocks: StockInputs) -> Allocations:
     if len(missing_tickers) > 0:
         raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-    ticker_weights = optimize_portfolio(stocks, _train, _train.corr_matrix)
+    ticker_weights = optimize_portfolio(stocks, _td, _td.coeff_dict["baseline"])
     summaries = portfolio_performance(ticker_weights, _test)
 
     return Allocations(ticker_weights=ticker_weights, summaries=summaries)
@@ -85,7 +85,7 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
     if len(missing_tickers) > 0:
         raise ValueError(f"Tickers not found in the test data: {missing_tickers}")
 
-    ticker_weights = optimize_portfolio(stocks, _train, _train.cosine_similarity)
+    ticker_weights = optimize_portfolio(stocks, _td, _td.coeff_dict["ml_baseline"])
     summaries = portfolio_performance(ticker_weights, _test)
 
     return Allocations(ticker_weights=ticker_weights, summaries=summaries)

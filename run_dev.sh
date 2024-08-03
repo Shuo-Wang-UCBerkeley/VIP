@@ -31,7 +31,7 @@ poetry env list --full-path
 
 # start mini-kube
 if [ $SHUT_DOWN_MINIKUBE -eq 1 ]; then
-    minikube start --kubernetes-version=v1.27.3 --namespace ${NAMESPACE}
+    minikube start --kubernetes-version=v1.29.2 --namespace ${NAMESPACE}
 fi
 kubectl config use-context minikube
 
