@@ -152,7 +152,7 @@ def load_train_data(refresh_train) -> TrainData:
 
         train.to_parquet(TRAIN_DF_PATH)
         s3_upload("CRSP/train.parquet", TRAIN_DF_PATH)
-        s3_upload("CRSP/train_server_data.parquet", TRAIN_DATA_PATH)
+        s3_upload("CRSP/train_server_data.pickle", TRAIN_DATA_PATH)
 
         # put train_data into pickle file for future use
         with open(TRAIN_DATA_PATH, "wb") as f:
