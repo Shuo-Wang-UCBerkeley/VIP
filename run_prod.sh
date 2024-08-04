@@ -25,6 +25,9 @@ echo "Creating environment..."
 poetry install
 poetry env list --full-path
 
+# call the main_crontab to reload the local data from s3
+python src/server/main_crontab.py --refresh_train True --refresh_test True
+
 # Run pytest within poetry virtualenv
 # echo
 # echo "Running pytest..."
@@ -90,7 +93,7 @@ echo
 echo "Prod deployment has been finished succesfully!"
 
 # start the port-forwarding of the grafana service
-echo
-kubectl port-forward -n prometheus svc/grafana 3000:3000
+# echo
+# kubectl port-forward -n prometheus svc/grafana 3000:3000
 
 # In Prod, we can't delete the namespace as we don't have ability to recreate it

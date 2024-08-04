@@ -15,9 +15,9 @@ ml_baseline_cos_s3_path = "CRSP/crsp_rachel_results_500.pkl"
 
 # ml dynamic cosine similarity
 ml_dynamic_cos_s3_path_dict = {
-    "ml_input_weight": "CRSP/cosine_sim_matrix_input_embedding_weights_100stocks_batchsize96_1feature11targets_1.csv",
-    "ml_ave_output": "CRSP/cosine_sim_matrix_ave_output_embedding_100stocks_batchsize96_1feature11targets_1.csv",
-    "ml_last_output": "CRSP/cosine_sim_matrix_last_output_embedding_100stocks_batchsize96_1feature11targets_1.csv",
+    "ml_input_weight": "CRSP/cosine_sim_matrix_input_embedding_weights_472stocks_1.csv",
+    "ml_ave_output": "CRSP/cosine_sim_matrix_ave_output_embedding_472stocks_1.csv",
+    "ml_last_output": "CRSP/cosine_sim_matrix_last_output_embedding_472stocks_1.csv",
 }
 
 TRAIN_DF_PATH = data_dir.joinpath("train.parquet").absolute()
@@ -55,8 +55,14 @@ def load_data(refresh_train, refresh_test) -> tuple[TrainData, pd.DataFrame]:
 
     if refresh_train:
         test_tickers = test.columns.tolist()
+        train_cos_tickers = td.coeff_dict["ml_last_output"].columns.tolist()
+
+        # find the intersection of tickers between test and train cosine similarity matrix
+        test_tickers = list(set(test_tickers).intersection(train_cos_tickers))
         test_permno = td.permno_to_tickers[td.permno_to_tickers["ticker"].isin(test_tickers)].index.tolist()
-        with open("test_permno.txt", "w") as file:
+        file_name = f"{len(test_permno)}_test_permno.txt"
+
+        with open(data_dir.joinpath(file_name).absolute(), "w") as file:
             for item in test_permno:
                 file.write(f"{item}\n")
 
@@ -130,11 +136,10 @@ def load_train_data(refresh_train) -> TrainData:
                 "AAPL",
                 "ORCL",
                 "MSFT",
-                "FB",
                 "GOOG",
                 "GM",
             ]
-            ml_dynamic_cos.loc[output_tickers, output_tickers].to_csv(name + ".csv")
+            ml_dynamic_cos.loc[output_tickers, output_tickers].to_csv(data_dir.joinpath(name + ".csv").absolute())
 
         assert ml_baseline_cos.columns.tolist() == ticker_list
 
