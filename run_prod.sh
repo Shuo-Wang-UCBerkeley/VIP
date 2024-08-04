@@ -47,7 +47,7 @@ echo
 kubectl config use-context w255-aks
 
 # delete all deployments in the namespace - to force new pods
-kubectl delete --all deployments --namespace ${NAMESPACE}
+kubectl delete deployment=${APP_NAME} --namespace ${NAMESPACE}
 
 kustomize build .k8s/overlays/prod -o ./temp/prod/
 kubectl apply -k .k8s/overlays/prod
