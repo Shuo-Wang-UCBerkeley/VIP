@@ -79,7 +79,6 @@ def load_train_data(refresh_train) -> TrainData:
             print(f"Creating data directory in {APP_DATA_DIR}...")
             APP_DATA_DIR.mkdir()
 
-        print(f"Downloading training outputs from s3 {train_s3_path}...")
         # s3_download(train_s3_path)
         s3_download(ml_baseline_cos_s3_path)
 

@@ -104,14 +104,16 @@ class StockInputs(BaseModel):
             "examples": [
                 {
                     "stockList": [
-                        {"ticker": "ABBV"},
-                        {"ticker": "AAPL"},
                         {"ticker": "ORCL"},
                         {"ticker": "MSFT"},
-                        {"ticker": "GOOG"},
-                        {"ticker": "GM"},
+                        {"ticker": "NVDA"},
+                        {"ticker": "JPM"},
+                        {"ticker": "CVX"},
+                        {"ticker": "GILD"},
+                        {"ticker": "TSLA"},
+                        {"ticker": "AMZN"},
                     ],
-                    "risk_tolerance": "low",
+                    "risk_tolerance": "medium",
                 },
                 {
                     "stockList": [

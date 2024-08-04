@@ -49,7 +49,7 @@ def s3_download(s3_path) -> str:
     Returns:
         the target file path in local folder
     """
-    # print(data_dir)
+    print(f"Downloading from s3: {s3_path}...")
     file_name = s3_path.split("/")[1]
     # print(file_name)
     target_path = data_dir.joinpath(file_name).absolute()
