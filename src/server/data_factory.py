@@ -168,6 +168,16 @@ def load_test_data(ticker_list: list[str], refresh_test) -> pd.DataFrame:
     load the test return data (2024-01-02 till today)
     """
 
+    # check the last time the test data was refreshed in TEST_DF_PATH
+    if refresh_test and TEST_DF_PATH.exists():
+        # get the last modified time
+        last_modified = TEST_DF_PATH.stat().st_mtime
+        # if the last modified time is within today, then no need to refresh
+        time_since_last_modified = pd.Timestamp("now", tz="UTC") - pd.Timestamp(last_modified, unit="s", tz="UTC")
+        if time_since_last_modified < pd.Timedelta(hours=2):
+            print("Test data is within 2 hours, not refreshing...")
+            return pd.read_parquet(TEST_DF_PATH)
+
     if refresh_test or not TEST_DF_PATH.exists():
         print("Refreshing test data from Yahoo Finance...")
         test_tickers = ticker_list + ["SPY"]

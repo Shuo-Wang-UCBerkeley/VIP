@@ -17,7 +17,7 @@ LOCAL_REDIS_URL = "redis://localhost:6379/"
 
 logger = logging.getLogger(__name__)
 REFRESH_TRAIN = os.environ.get("REFRESH_TRAIN") == "True"
-_td, _test = load_data(refresh_train=REFRESH_TRAIN, refresh_test=REFRESH_TRAIN)
+_td, _test = load_data(refresh_train=REFRESH_TRAIN, refresh_test=True)
 
 
 @asynccontextmanager

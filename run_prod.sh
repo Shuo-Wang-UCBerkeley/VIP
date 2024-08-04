@@ -46,6 +46,9 @@ echo "Docker image pushed to Azure Container Registry: ${IMAGE_FQDN}"
 echo
 kubectl config use-context w255-aks
 
+# delete all deployments in the namespace - to force new pods
+kubectl delete --all deployments --namespace ${NAMESPACE}
+
 kustomize build .k8s/overlays/prod -o ./temp/prod/
 kubectl apply -k .k8s/overlays/prod
 
@@ -77,6 +80,16 @@ curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/baseline_allocate" \
 echo
 echo "testing '/ml_allocate_cosine_similarity' endpoint, expecting 200..."
 curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/ml_allocate_cosine_similarity" \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+            "risk_tolerance": "moderate",
+            "stockList": [{"ticker":"AAPL","weight_lower_bound":0.05,"weight_upper_bound":0.15},{"ticker":"AMZN","weight_lower_bound":0.35,"weight_upper_bound":0.35},{"ticker":"GOOGL"},{"ticker":"NVDA","weight_lower_bound":0.25}]
+        }'
+
+echo
+echo "testing '/ml_allocate_dynamic_avg' endpoint, expecting 200..."
+curl -o /dev/null -s -w "%{http_code}\n" -X 'POST' "$URI/ml_allocate_dynamic_avg" \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
