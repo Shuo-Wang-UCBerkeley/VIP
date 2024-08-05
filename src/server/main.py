@@ -44,7 +44,7 @@ app = FastAPI(
 
 
 @app.post("/baseline_allocate")
-@cache(expire=60)
+@cache(expire=1200)
 async def baseline_allocate(stocks: StockInputs) -> Allocations:
     """
     Calibrates the allocation weights using the statistical methods.
@@ -68,7 +68,7 @@ async def ml_allocate_cosine_similarity(stocks: StockInputs) -> Allocations:
 
 
 @app.post("/ml_allocate_dynamic_avg")
-@cache(expire=60)
+@cache(expire=1200)
 async def ml_allocate_dynamic_avg(stocks: StockInputs) -> Allocations:
     """
     Calibrates the allocation weights using ml-generated cosine similarity.
@@ -80,7 +80,7 @@ async def ml_allocate_dynamic_avg(stocks: StockInputs) -> Allocations:
 
 
 @app.post("/ml_allocate_dynamic_last")
-@cache(expire=60)
+@cache(expire=1200)
 async def ml_allocate_dynamic_last(stocks: StockInputs) -> Allocations:
     """
     Calibrates the allocation weights using ml-generated cosine similarity.
@@ -92,7 +92,6 @@ async def ml_allocate_dynamic_last(stocks: StockInputs) -> Allocations:
 
 
 @app.get("/refresh_data")
-@cache(expire=60)
 async def refresh_data():
     """
     refresh the test data from yahoo finance.

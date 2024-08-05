@@ -83,7 +83,7 @@ def load_train_data(refresh_train) -> TrainData:
             APP_DATA_DIR.mkdir()
 
         # s3_download(train_s3_path)
-        s3_download(ml_baseline_cos_s3_path)
+        # s3_download(ml_baseline_cos_s3_path)
 
         # ml baseline cosine similarity
         results = pd.read_pickle(get_local_path(ml_baseline_cos_s3_path))
@@ -124,7 +124,7 @@ def load_train_data(refresh_train) -> TrainData:
 
         # load the ml dynamic cosine similarity
         for name, s3_path in ml_dynamic_cos_s3_path_dict.items():
-            s3_download(s3_path)
+            # s3_download(s3_path)
             ml_dynamic_cos = pd.read_csv(get_local_path(s3_path), index_col=0)
 
             # filter the cosine similarity matrix based on the permno_list
@@ -186,7 +186,9 @@ def load_test_data(ticker_list: list[str], refresh_test) -> pd.DataFrame:
         time_since_last_modified = pd.Timestamp("now", tz="UTC") - pd.Timestamp(last_modified, unit="s", tz="UTC")
         if time_since_last_modified < pd.Timedelta(hours=2):
             print("Test data is within 2 hours, not refreshing...")
-            return pd.read_parquet(TEST_DF_PATH)
+            test = pd.read_parquet(TEST_DF_PATH)
+            print(f"Test data shape: {test.shape}, from {test.index.min()} to {test.index.max()}")
+            return test
 
     if refresh_test or not TEST_DF_PATH.exists():
         print("Refreshing test data from Yahoo Finance...")
