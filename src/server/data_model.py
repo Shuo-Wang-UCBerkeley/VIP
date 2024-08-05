@@ -103,44 +103,23 @@ class StockInputs(BaseModel):
         json_schema_extra={
             "examples": [
                 {
-                    "stockList": [
-                        {"ticker": "ORCL"},
-                        {"ticker": "MSFT"},
-                        {"ticker": "NVDA"},
-                        {"ticker": "JPM"},
-                        {"ticker": "CVX"},
-                        {"ticker": "GILD"},
-                        {"ticker": "TSLA"},
-                        {"ticker": "AMZN"},
-                    ],
-                    "risk_tolerance": "medium",
-                },
-                {
+                    "risk_tolerance": "high",
                     "stockList": [
                         {
-                            # range of weights
-                            "ticker": "AAPL",
-                            "weight_lower_bound": 0.05,
-                            "weight_upper_bound": 0.15,
-                        },
-                        {
-                            # fixed weight
                             "ticker": "AMZN",
-                            "weight_lower_bound": 0.35,
-                            "weight_upper_bound": 0.35,
+                            "weight_upper_bound": 0.385,
+                            "weight_lower_bound": 0.385,
                         },
-                        {
-                            # unconstrained weight
-                            "ticker": "GOOGL",
-                        },
-                        {
-                            # only lower bound
-                            "ticker": "NVDA",
-                            "weight_lower_bound": 0.25,
-                        },
+                        {"ticker": "TSLA", "weight_upper_bound": 0.3, "weight_lower_bound": 0},
+                        {"ticker": "AAPL", "weight_upper_bound": 0},
+                        {"ticker": "JPM", "weight_upper_bound": 0.3},
+                        {"ticker": "ORCL", "weight_upper_bound": 0.3},
+                        {"ticker": "NVDA", "weight_upper_bound": 0.3},
+                        {"ticker": "XOM", "weight_upper_bound": 0.3},
+                        {"ticker": "GILD", "weight_upper_bound": 0.3},
+                        {"ticker": "ABBV", "weight_upper_bound": 0.3},
                     ],
-                    "risk_tolerance": "moderate",
-                },
+                }
             ]
         },
     )
