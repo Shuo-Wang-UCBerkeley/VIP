@@ -54,6 +54,9 @@ def load_data(refresh_train, refresh_test) -> tuple[TrainData, pd.DataFrame]:
     test = load_test_data(ticker_list=td.ticker_list, refresh_test=refresh_test)
 
     if refresh_train:
+
+        s3_upload("CRSP/test.parquet", TEST_DF_PATH)
+
         test_tickers = test.columns.tolist()
         train_cos_tickers = td.coeff_dict["ml_last_output"].columns.tolist()
 
@@ -152,7 +155,13 @@ def load_train_data(refresh_train) -> TrainData:
 
         train.to_parquet(TRAIN_DF_PATH)
         s3_upload("CRSP/train.parquet", TRAIN_DF_PATH)
-        s3_upload("CRSP/train_server_data.pickle", TRAIN_DATA_PATH)
+
+        # put train_data into pickle file for future use
+        s3_train_server_data_path = "CRSP/train_server_data.pickle"
+        with open(get_local_path(s3_train_server_data_path), "wb") as f:
+            pickle.dump(train_data.coeff_dict, f)
+
+        s3_upload(s3_train_server_data_path)
 
         # put train_data into pickle file for future use
         with open(TRAIN_DATA_PATH, "wb") as f:
@@ -201,7 +210,6 @@ def load_test_data(ticker_list: list[str], refresh_test) -> pd.DataFrame:
             test = test.fillna(0)
 
         test.to_parquet(TEST_DF_PATH)
-        s3_upload("CRSP/test.parquet", TEST_DF_PATH)
 
     else:
         test = pd.read_parquet(TEST_DF_PATH)
